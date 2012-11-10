@@ -1,4 +1,4 @@
-Advanced Upload field for Symphony CMS
+Enhanced Upload field for Symphony CMS
 ======================================
 
 This small extension aims to provide the ability to override the destination folder defined in the section editor.

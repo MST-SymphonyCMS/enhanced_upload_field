@@ -1,5 +1,7 @@
 <?php
-    class extension_enhanced_upload_field extends Extension {
+    class Extension_Enhanced_Upload_Field extends Extension {
+
+    const FIELD_TABLE = 'tbl_fields_enhanced_upload';
 
     public function getSubscribedDelegates(){
 			return array(
@@ -22,9 +24,6 @@
 			$pairs = array();
 			
 			$conf = array_map('trim', $context['settings']['enhanced-upload-field']);
-			
-			$force_include = preg_split('/[\r\n]+/i', $conf['force-include'], -1, PREG_SPLIT_NO_EMPTY);
-			$force_include = array_map('trim', $force_include);
 			
 			$context['settings']['enhanced-upload-field'] = array(
 				'override-path' => (isset($conf['override-path']) ? 'yes' : 'no')		
@@ -53,6 +52,18 @@
 
 
     public function uninstall(){
+    	
+			try{
+				Symphony::Database()->query(sprintf(
+					"DROP TABLE `%s`",
+					self::FIELD_TABLE
+				));
+			}
+			catch( DatabaseException $dbe ){
+				// table deosn't exist
+			}
+
+			return true;
 				
 			Symphony::Configuration()->remove('enhanced-upload-field');			
 			
@@ -61,8 +72,21 @@
 	}
 
 
-    public function install(){
-			
+		public function install(){
+			return Symphony::Database()->query(sprintf(
+				"CREATE TABLE `%s` (
+					`id` int(11) unsigned NOT NULL auto_increment,
+					`field_id` int(11) unsigned NOT NULL,
+					`destination` varchar(255) NOT NULL,
+					`override` enum('yes','no') default 'yes',
+					`validator` varchar(50),
+					`unique` enum('yes','no') default 'yes',
+					PRIMARY KEY (`id`),
+					KEY `field_id` (`field_id`)
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;",
+				self::FIELD_TABLE
+			));
+	
 			Symphony::Configuration()->set('override-path', 'no', 'enhanced-upload-field');
 		
 			Administration::instance()->saveConfig();

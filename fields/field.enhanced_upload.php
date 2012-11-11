@@ -41,7 +41,7 @@
 			if(!is_dir(DOCROOT . $this->get('destination') . '/')){
 				$flagWithError = __('The destination directory, %s, does not exist.', array('<code>' . $this->get('destination') . '</code>'));
 			}
-
+			//These 2 functions will need to be addressed as they refer to the destination directory in the field table.. we need a foreach on every upload field table entry to check the folder they refer to exists.
 			elseif(!$flagWithError && !is_writable(DOCROOT . $this->get('destination') . '/')){
 				$flagWithError = __('Destination folder is not writable.') . ' ' . __('Please check permissions on %s.', array('<code>' . $this->get('destination') . '</code>'));
 			}
@@ -85,7 +85,6 @@
 			$span->appendChild($choosefolder);
 			// Add this back in when JS is figured out - 
 			//if($this->get('override') != 'no' && !$data['file']) $span->appendChild($choosefolder);
-			
 			
 			//Render the upload field or reflect the uploaded file stored in DB.
 			if($data['file']) $span->appendChild(new XMLElement('span', Widget::Anchor('/workspace' . $data['file'], URL . '/workspace' . $data['file'])));			
@@ -203,6 +202,7 @@
 			//Need to override the upload path here
 			//
 			//
+			
 			$select = $_POST['fields']['directory'];
 			//var_dump($data,$select);die;
 			$override_path = $this->get('override') == 'yes' ? '/workspace/uploads/newdirectory' : trim($this->get('destination'));

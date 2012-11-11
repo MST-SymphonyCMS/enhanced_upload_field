@@ -202,6 +202,12 @@
 
 			return FieldManager::saveSettings($id, $fields);
 	}
+	
+	public function prepareTableValue($data, XMLElement $link=NULL, $entry_id = null){
+		
+		parent::prepareTableValue($data,$link,$entry_id);
+		
+	}
 		
 		
 }

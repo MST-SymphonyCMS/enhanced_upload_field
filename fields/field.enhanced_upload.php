@@ -194,7 +194,9 @@
 			$span = new XMLElement('span', NULL, array('class' => 'frame'));
 			
 			//Allow selection of a child folder to upload the image
-			if($this->get('override') != 'no') $span->appendChild(Widget::Select('fields['.$this->get('sortorder').'][destination]', $options), array('class' => 'file'));
+			$choosefolder = Widget::Select('fields['.$this->get('sortorder').'][destination]', $options);
+			$choosefolder->setAttribute('class','enhanced_upload file');
+			if($this->get('override') != 'no') $span->appendChild($choosefolder);
 			
 			//Render the upload field or reflect the uploaded file stored in DB.
 			if($data['file']) $span->appendChild(new XMLElement('span', Widget::Anchor('/workspace' . $data['file'], URL . '/workspace' . $data['file'])));			
@@ -228,19 +230,6 @@
 
 			return FieldManager::saveSettings($id, $fields);
 	}
-	
-	public static function updateFieldData() {
-
-			$tbl = self::FIELD_TBL_NAME;
-
-			// allow all drivers for fields that already exists
-			$override = $_POST['fields']['override']=='on' ? 'yes' : 'no';
-
-			return Symphony::Database()->query("
-				UPDATE `$tbl`
-					SET `override` = '$drivers'
-			");
-		}
 	
     public function checkPostFieldData($data, &$message, $entry_id=NULL){
 

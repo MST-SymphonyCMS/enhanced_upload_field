@@ -57,10 +57,11 @@
 				'/workspace/pages',
 				'/workspace/utilities'
 			);
-			$directories = General::listDirStructure(WORKSPACE, null, true, DOCROOT, $ignore);
+			$directories = General::listDirStructure(WORKSPACE . $this->get('destination'), null, true, DOCROOT, $ignore);
 
 			$options = array();
 			$options[] = array($this->get('destination'), false, $this->get('destination'));
+			var_dump($options);die;
 			if(!empty($directories) && is_array($directories)){
 				foreach($directories as $d) {
 					$d = '/' . trim($d, '/');
@@ -75,7 +76,8 @@
 			//Allow selection of a child folder to upload the image
 			$choosefolder = Widget::Select('fields['.$this->get('sortorder').'][destination]', $options);
 			$choosefolder->setAttribute('class','enhanced_upload file');
-			if($this->get('override') != 'no') $span->appendChild($choosefolder);
+			if($this->get('override') != 'no' ) $span->appendChild($choosefolder);
+			// Add this back in when JS is figured out - && !$data['file']
 			
 			//Render the upload field or reflect the uploaded file stored in DB.
 			if($data['file']) $span->appendChild(new XMLElement('span', Widget::Anchor('/workspace' . $data['file'], URL . '/workspace' . $data['file'])));			

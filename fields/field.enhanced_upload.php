@@ -6,60 +6,14 @@
 	require_once(TOOLKIT . '/fields/field.upload.php');
 
 	Class fieldEnhanced_Upload extends FieldUpload {
-        
-		
-		/**
-		 *
-		 * Name of the field table
-		 * @var string
-		 */
-		const FIELD_TBL_NAME = 'tbl_fields_enhanced_upload';
-		
 		
 		public function __construct(){
 			parent::__construct();
 
 			$this->_name = __('Enhanced File Upload');
-			$this->_required = true;
-
-			$this->set('location', 'sidebar');
-			$this->set('required', 'no');
 			$this->set('override', 'no');
 	
 		}
-		
-
-	/*-------------------------------------------------------------------------
-		Utilities:
-	-------------------------------------------------------------------------*/
-
-		public function entryDataCleanup($entry_id, $data=NULL){
-			$file_location = WORKSPACE . '/' . ltrim($data['file'], '/');
-
-			if(is_file($file_location)){
-				General::deleteFile($file_location);
-			}
-
-			parent::entryDataCleanup($entry_id);
-
-			return true;
-		}
-
-		public static function getMetaInfo($file, $type){
-			$meta = array();
-
-			if(!file_exists($file) || !is_readable($file)) return $meta;
-
-			$meta['creation'] = DateTimeObj::get('c', filemtime($file));
-
-			if(General::in_iarray($type, fieldUpload::$imageMimeTypes) && $array = @getimagesize($file)){
-				$meta['width'] = $array[0];
-				$meta['height'] = $array[1];
-			}
-
-			return $meta;
-		}
-
 		
 		
 		/*-------------------------------------------------------------------------
@@ -69,43 +23,13 @@
         public function displaySettingsPanel(XMLElement &$wrapper, $errors = null) {
         	
         	parent::displaySettingsPanel($wrapper, $errors);
-			// Destination Folder
-			$ignore = array(
-				'/workspace/events',
-				'/workspace/data-sources',
-				'/workspace/text-formatters',
-				'/workspace/pages',
-				'/workspace/utilities'
-			);
 			
-			$directories = General::listDirStructure(WORKSPACE, null, true, DOCROOT, $ignore);
-
-			$label = Widget::Label(__('Destination Directory'));
-
-			$options = array();
-			$options[] = array('/workspace', false, '/workspace');
-			if(!empty($directories) && is_array($directories)){
-				foreach($directories as $d) {
-					$d = '/' . trim($d, '/');
-					if(!in_array($d, $ignore)) $options[] = array($d, ($this->get('destination') == $d), $d);
-				}
-			}
-
-			$label->appendChild(Widget::Select('fields['.$this->get('sortorder').'][destination]', $options));
-			
+			$label = new XMLElement('label');
             $input = Widget::Input("fields[{$this->get('sortorder')}][override]", 'yes', 'checkbox');
 			if( $this->get('override') == 'yes' ) $input->setAttribute('checked', 'checked');
 			$label->setValue(__('%s Allow overriding of upload directory in entries', array($input->generate())));
-			
-			if(isset($errors['destination'])) $wrapper->appendChild(Widget::Error($label, $errors['destination']));
-			else $wrapper->appendChild($label);
-			
-			$this->buildValidationSelect($wrapper, $this->get('validator'), 'fields['.$this->get('sortorder').'][validator]', 'upload');
 
-			$div = new XMLElement('div', NULL, array('class' => 'two columns'));
-			$this->appendRequiredCheckbox($div);
-			$this->appendShowColumnCheckbox($div);
-			$wrapper->appendChild($div);
+			$wrapper->appendChild($label);
 
         }
 
@@ -187,6 +111,9 @@
 		}
 	
 		public function prepareTableValue($data, XMLElement $link=NULL, $entry_id = null){
+			
+			//var_dump($data);
+			
 			if(!$file = $data['file']){
 				if($link) return parent::prepareTableValue(null, $link);
 				else return parent::prepareTableValue(null);
@@ -194,6 +121,7 @@
 
 			if($link){
 				$link->setValue(basename($file));
+				//var_dump($file);
 				return $link->generate();
 			}
 
@@ -201,6 +129,8 @@
 				$link = Widget::Anchor(basename($file), URL . '/workspace' . $file);
 				return $link->generate();
 			}
+			
+			
 		}
 	
 		

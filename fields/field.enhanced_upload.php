@@ -76,20 +76,24 @@
 
 			if($this->get('required') != 'yes') $label->appendChild(new XMLElement('i', __('Optional')));
 			
-			$span = new XMLElement('span', NULL, array('class' => 'frame enhanced_field'));
+			$span = new XMLElement('span', NULL, array('class' => 'frame enhanced_upload'));
 			//$span->appendChild(new XMLElement('p', 'This'));
 			
 			//Allow selection of a child folder to upload the image
 			$choosefolder = Widget::Select('fields['.$this->get('sortorder').'][directory]', $options);
 			$choosefolder->setAttribute('class','enhanced_upload file');
-			if($this->get('override') != 'no' ) $span->appendChild($choosefolder);
-			// Add this back in when JS is figured out - && !$data['file']
+			$span->appendChild($choosefolder);
+			// Add this back in when JS is figured out - 
+			//if($this->get('override') != 'no' && !$data['file']) $span->appendChild($choosefolder);
+			
 			
 			//Render the upload field or reflect the uploaded file stored in DB.
 			if($data['file']) $span->appendChild(new XMLElement('span', Widget::Anchor('/workspace' . $data['file'], URL . '/workspace' . $data['file'])));			
 			
 			$span->appendChild(Widget::Input('fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix, $data['file'], ($data['file'] ? 'hidden' : 'file')));
 
+			//var_dump($fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix);
+			
 			$label->appendChild($span);
 
 			if($flagWithError != NULL) $wrapper->appendChild(Widget::Error($label, $flagWithError));
@@ -110,6 +114,7 @@
 			$fields['destination'] = $this->get('destination');
 			$fields['validator'] = ($fields['validator'] == 'custom' ? NULL : $this->get('validator'));
 			$fields['override'] = $this->get('override');
+			//$fields['directory'] = $fields['directory'];
 
 			return FieldManager::saveSettings($id, $fields);
 		}
@@ -205,7 +210,7 @@
 			$rel_path = str_replace('/workspace', '', $override_path);
 			$existing_file = NULL;
 			
-			//var_dump($abs_path,$rel_path,$existing_file,$override_path,$select);die;
+			//var_dump($abs_path,$rel_path,$existing_file,$override_path,$select,$_POST,$_FILES);die;
 
 			if(!is_null($entry_id)) {
 				$row = Symphony::Database()->fetchRow(0, sprintf(

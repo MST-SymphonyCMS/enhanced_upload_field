@@ -39,6 +39,9 @@
 
 		public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null){
 		
+			Administration::instance()->Page->addStylesheetToHead(URL . '/extensions/enhanced_upload_field/assets/style.css', 'screen');
+			Administration::instance()->Page->addScriptToHead(URL . '/extensions/enhanced_upload_field/assets/script.enhanced_upload_field.js', 120);
+		
 			//These 2 functions will need to be addressed as they refer to the destination directory in the field table.. we need a foreach on every upload field table entry to check the folder they refer to exists.
 		
 			if(!is_dir(DOCROOT . $this->get('destination') . '/')){
@@ -76,24 +79,17 @@
 			if($this->get('required') != 'yes') $label->appendChild(new XMLElement('i', __('Optional')));
 			
 			if($this->get('override') == 'yes'){
-			
-			$override = new XMLELement('span', NULL, array('class' => 'enhanced_upload'));
-			$choosefolder = Widget::Select('directory', $options, array());
-			$choosefolder->setAttribute('class','enhanced_upload file');
-			$override->appendChild($choosefolder);
-			$label->appendChild($override);
+				
+				$override = new XMLELement('span', NULL, array('class' => 'enhanced_upload'));
+				//Allow selection of a child folder to upload the image
+				//$choosefolder = Widget::Select('fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix.'[directory]', $options, array('class' => 'enhanced_upload_select'));
+				$choosefolder = Widget::Select('directory', $options, array('class' => 'enhanced_upload_select'));
+				$override->appendChild($choosefolder);
+				$label->appendChild($override);
 			
 			}
 			
 			$span = new XMLElement('span', NULL, array('class' => 'frame enhanced_upload'));
-			
-			//Allow selection of a child folder to upload the image
-			//$choosefolder = Widget::Select('fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix.'[directory]', $options, array());
-
-			//$span->appendChild($choosefolder);
-			
-			// Add this back in when JS is figured out - 
-			//if($this->get('override') != 'no' && !$data['file']) $span->appendChild($choosefolder);
 			
 			//Render the upload field or reflect the uploaded file stored in DB.
 			if($data['file']) $span->appendChild(new XMLElement('span', Widget::Anchor('/workspace' . $data['file'], URL . '/workspace' . $data['file'])));			

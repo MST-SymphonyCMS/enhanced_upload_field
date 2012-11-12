@@ -75,12 +75,15 @@
 
 			if($this->get('required') != 'yes') $label->appendChild(new XMLElement('i', __('Optional')));
 			
+			if($this->get('override') == 'yes'){
+			
 			$override = new XMLELement('span', NULL, array('class' => 'enhanced_upload'));
 			$choosefolder = Widget::Select('directory', $options, array());
 			$choosefolder->setAttribute('class','enhanced_upload file');
 			$override->appendChild($choosefolder);
-			
 			$label->appendChild($override);
+			
+			}
 			
 			$span = new XMLElement('span', NULL, array('class' => 'frame enhanced_upload'));
 			

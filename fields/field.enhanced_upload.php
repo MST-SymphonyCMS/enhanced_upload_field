@@ -61,8 +61,6 @@
 				'/workspace/utilities'
 			);
 			
-			//$output = basename($this->get('destination'));
-			
 			$directories = General::listDirStructure(WORKSPACE , null, true, DOCROOT, $ignore);
 			
 			$options = array();
@@ -77,12 +75,19 @@
 
 			if($this->get('required') != 'yes') $label->appendChild(new XMLElement('i', __('Optional')));
 			
+			$override = new XMLELement('span', NULL, array('class' => 'enhanced_upload'));
+			$choosefolder = Widget::Select('directory', $options, array());
+			$choosefolder->setAttribute('class','enhanced_upload file');
+			$override->appendChild($choosefolder);
+			
+			$label->appendChild($override);
+			
 			$span = new XMLElement('span', NULL, array('class' => 'frame enhanced_upload'));
 			
 			//Allow selection of a child folder to upload the image
-			$choosefolder = Widget::Select('fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix.'[directory]', $options, array());
-			$choosefolder->setAttribute('class','enhanced_upload file');
-			$span->appendChild($choosefolder);
+			//$choosefolder = Widget::Select('fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix.'[directory]', $options, array());
+
+			//$span->appendChild($choosefolder);
 			
 			// Add this back in when JS is figured out - 
 			//if($this->get('override') != 'no' && !$data['file']) $span->appendChild($choosefolder);
@@ -92,9 +97,6 @@
 			
 			$span->appendChild(Widget::Input('fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix, $data['file'], ($data['file'] ? 'hidden' : 'file')));
 			
-			//var_dump($choosefolder);
-			
-			//var_dump($fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix);
 			
 			$label->appendChild($span);
 
@@ -137,23 +139,14 @@
 				return $link->generate();
 			}
 			
-			
 		}
-		
-		/* Check postFieldData
-		/*
-		/*
-		*/
+			
 		public function checkPostFieldData($data, &$message, $entry_id=NULL){
 			/**
 			 * For information about PHPs upload error constants see:
 			 * @link http://php.net/manual/en/features.file-upload.errors.php
 			 */
 			$message = null;
-
-			$data['directory'] = $_POST['fields']['image']['directory'];
-			
-			var_dump($data);die;
 			
 			if (
 				empty($data)
@@ -268,8 +261,6 @@
 		public function processRawFieldData($data, &$status, &$message=null, $simulate=false, $entry_id=NULL){
 			$status = self::__OK__;
 			
-			
-			
 			//fixes bug where files are deleted, but their database entries are not.
 			if($data === NULL) {
 				return array(
@@ -280,24 +271,18 @@
 				);
 			}
 			
-			
-
 			// It's not an array, so just retain the current data and return
 			if(!is_array($data)) {
 				// Ensure the file exists in the `WORKSPACE` directory
 				// @link http://symphony-cms.com/discuss/issues/view/610/
 				$file = WORKSPACE . preg_replace(array('%/+%', '%(^|/)\.\./%'), '/', $data);
 
-				
-				
 				$result = array(
 					'file' => $data,
 					'mimetype' => NULL,
 					'size' => NULL,
 					'meta' => NULL
 				);
-				
-				
 
 				// Grab the existing entry data to preserve the MIME type and size information
 				if(isset($entry_id) && !is_null($entry_id)) {
@@ -320,26 +305,21 @@
 					if(empty($result['size'])) $result['size'] = filesize($file);
 					if(empty($result['meta'])) $result['meta'] = serialize(self::getMetaInfo($file, $result['mimetype']));
 				}
-
+				
 				return $result;
 			}
 
 			if($simulate && is_null($entry_id)) return $data;
-
-			// Upload the new file
-			//
-			//Need to override the upload path here
-			//
-			//
 			
-			$select = $_POST['image']['directory'];
-
-			$override_path = $this->get('override') == 'yes' ? '/workspace/uploads/newdirectory' : trim($this->get('destination'));
+			
+			//My special Select box alteration :p
+			$data['directory'] = $_POST['directory'];
+			
+			// Upload the new file
+			$override_path = $this->get('override') == 'yes' ? $data['directory'] : trim($this->get('destination'));
 			$abs_path = DOCROOT . $override_path . '/';
 			$rel_path = str_replace('/workspace', '', $override_path);
 			$existing_file = NULL;
-			
-			var_dump($_POST,$_FILES,$data);die;
 
 			if(!is_null($entry_id)) {
 				$row = Symphony::Database()->fetchRow(0, sprintf(
@@ -400,12 +380,16 @@
 				$data['type'] = (function_exists('mime_content_type') ? mime_content_type($file) : 'application/octet-stream');
 			}
 
+			//var_dump($_POST,$data);die;
+			
 			return array(
 				'file' => $file,
 				'size' => $data['size'],
 				'mimetype' => $data['type'],
 				'meta' => serialize(self::getMetaInfo(WORKSPACE . $file, $data['type']))
 			);
+			
+			
 		}
 	
 		

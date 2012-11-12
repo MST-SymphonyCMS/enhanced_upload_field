@@ -33,15 +33,18 @@
 
         }
 
-    /*-------------------------------------------------------------------------
-		Publish:
-	-------------------------------------------------------------------------*/
+		/*-------------------------------------------------------------------------
+			Publish:
+		-------------------------------------------------------------------------*/
 
 		public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null){
+		
+			//These 2 functions will need to be addressed as they refer to the destination directory in the field table.. we need a foreach on every upload field table entry to check the folder they refer to exists.
+		
 			if(!is_dir(DOCROOT . $this->get('destination') . '/')){
 				$flagWithError = __('The destination directory, %s, does not exist.', array('<code>' . $this->get('destination') . '</code>'));
 			}
-			//These 2 functions will need to be addressed as they refer to the destination directory in the field table.. we need a foreach on every upload field table entry to check the folder they refer to exists.
+			
 			elseif(!$flagWithError && !is_writable(DOCROOT . $this->get('destination') . '/')){
 				$flagWithError = __('Destination folder is not writable.') . ' ' . __('Please check permissions on %s.', array('<code>' . $this->get('destination') . '</code>'));
 			}
@@ -62,11 +65,9 @@
 			
 			$directories = General::listDirStructure(WORKSPACE , null, true, DOCROOT, $ignore);
 			
-			//var_dump($directories,$output);
-			
 			$options = array();
 			$options[] = array($this->get('destination'), false, $this->get('destination'));
-			//var_dump($options);die;
+			
 			if(!empty($directories) && is_array($directories)){
 				foreach($directories as $d) {
 					$d = '/' . trim($d, '/');
@@ -77,7 +78,6 @@
 			if($this->get('required') != 'yes') $label->appendChild(new XMLElement('i', __('Optional')));
 			
 			$span = new XMLElement('span', NULL, array('class' => 'frame enhanced_upload'));
-			//$span->appendChild(new XMLElement('p', 'This'));
 			
 			//Allow selection of a child folder to upload the image
 			$choosefolder = Widget::Select('fields['.$this->get('sortorder').'][directory]', $options);
@@ -98,7 +98,7 @@
 			if($flagWithError != NULL) $wrapper->appendChild(Widget::Error($label, $flagWithError));
 			else $wrapper->appendChild($label);
 		
-    }
+		}
 
     	public function commit(){
     		

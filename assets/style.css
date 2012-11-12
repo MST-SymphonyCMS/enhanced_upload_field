@@ -8,3 +8,9 @@ select.enhanced_upload_select_hidden{
 	display:none;
 	
 }
+
+select.enhanced_upload_select_hidden.show{
+	
+	display:block;
+	
+}

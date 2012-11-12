@@ -3,8 +3,10 @@
 		
 		// Upload fields
 		$('em').click(function(){
+		
+		//$(this).parent().parent().children().addClass("clicked");
 
-			$('.enhanced_upload select.enhanced_upload_select_hidden').css('display','block');
+			$('.enhanced_upload select.enhanced_upload_select_hidden').addClass('show');
 		
 		});
 	

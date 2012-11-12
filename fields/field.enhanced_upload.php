@@ -38,7 +38,7 @@
 		-------------------------------------------------------------------------*/
 
 		public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null){
-		
+			
 			Administration::instance()->Page->addStylesheetToHead(URL . '/extensions/enhanced_upload_field/assets/style.css', 'screen');
 			Administration::instance()->Page->addScriptToHead(URL . '/extensions/enhanced_upload_field/assets/script.enhanced_upload_field.js', 120);
 		
@@ -82,8 +82,8 @@
 				
 				$override = new XMLELement('span', NULL, array('class' => 'enhanced_upload'));
 				//Allow selection of a child folder to upload the image
-				//$choosefolder = Widget::Select('fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix.'[directory]', $options, array('class' => 'enhanced_upload_select'));
-				$choosefolder = Widget::Select('directory', $options, array('class' => 'enhanced_upload_select_'.(!$data['file'] ? 'show':'hidden')));
+				$choosefolder = Widget::Select('fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix.'[directory]', $options, array('class' => 'enhanced_upload_select_'.(!$data['file'] ? 'show':'hidden')));
+				//$choosefolder = Widget::Select('directory', $options, array('class' => 'enhanced_upload_select_'.(!$data['file'] ? 'show':'hidden')));
 				$override->appendChild($choosefolder);
 				$label->appendChild($override);
 			
@@ -311,15 +311,14 @@
 			if($simulate && is_null($entry_id)) return $data;
 			
 			
-			//My special Select box alteration :p
-			$data['directory'] = $_POST['directory'];
+			//My special Select box alteration :P
 			
 			// Upload the new file
-			$override_path = $this->get('override') == 'yes' ? $data['directory'] : trim($this->get('destination'));
+			$override_path = $this->get('override') == 'yes' ? $_POST['fields'][$this->get('element_name')]['directory'] : trim($this->get('destination'));
 			$abs_path = DOCROOT . $override_path . '/';
 			$rel_path = str_replace('/workspace', '', $override_path);
 			$existing_file = NULL;
-
+			
 			if(!is_null($entry_id)) {
 				$row = Symphony::Database()->fetchRow(0, sprintf(
 					"SELECT * FROM `tbl_entries_data_%s` WHERE `entry_id` = %d LIMIT 1",
@@ -379,7 +378,7 @@
 				$data['type'] = (function_exists('mime_content_type') ? mime_content_type($file) : 'application/octet-stream');
 			}
 
-			//var_dump($_POST,$data);die;
+			//var_dump($data,$data[$this->get('element_name')]['directory']);die;
 			
 			return array(
 				'file' => $file,

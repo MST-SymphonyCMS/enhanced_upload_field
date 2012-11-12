@@ -83,7 +83,7 @@
 				$override = new XMLELement('span', NULL, array('class' => 'enhanced_upload'));
 				//Allow selection of a child folder to upload the image
 				//$choosefolder = Widget::Select('fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix.'[directory]', $options, array('class' => 'enhanced_upload_select'));
-				$choosefolder = Widget::Select('directory', $options, array('class' => 'enhanced_upload_select'));
+				$choosefolder = Widget::Select('directory', $options, array('class' => 'enhanced_upload_select_'.(!$data['file'] ? 'show':'hidden')));
 				$override->appendChild($choosefolder);
 				$label->appendChild($override);
 			

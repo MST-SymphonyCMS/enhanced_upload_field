@@ -1,4 +1,9 @@
-select.enhanced_upload_select{
+select.enhanced_upload_select_show{
+	
+	display:block;
+	
+}
+select.enhanced_upload_select_hidden{
 	
 	display:none;
 	

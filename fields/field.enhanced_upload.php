@@ -61,7 +61,7 @@
 				'/workspace/utilities'
 			);
 			
-			$output = basename($this->get('destination'));
+			//$output = basename($this->get('destination'));
 			
 			$directories = General::listDirStructure(WORKSPACE , null, true, DOCROOT, $ignore);
 			
@@ -80,9 +80,10 @@
 			$span = new XMLElement('span', NULL, array('class' => 'frame enhanced_upload'));
 			
 			//Allow selection of a child folder to upload the image
-			$choosefolder = Widget::Select('fields['.$this->get('sortorder').'][directory]', $options);
+			$choosefolder = Widget::Select('fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix.'[directory]', $options, array());
 			$choosefolder->setAttribute('class','enhanced_upload file');
 			$span->appendChild($choosefolder);
+			
 			// Add this back in when JS is figured out - 
 			//if($this->get('override') != 'no' && !$data['file']) $span->appendChild($choosefolder);
 			
@@ -90,7 +91,9 @@
 			if($data['file']) $span->appendChild(new XMLElement('span', Widget::Anchor('/workspace' . $data['file'], URL . '/workspace' . $data['file'])));			
 			
 			$span->appendChild(Widget::Input('fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix, $data['file'], ($data['file'] ? 'hidden' : 'file')));
-
+			
+			//var_dump($choosefolder);
+			
 			//var_dump($fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix);
 			
 			$label->appendChild($span);
@@ -113,7 +116,6 @@
 			$fields['destination'] = $this->get('destination');
 			$fields['validator'] = ($fields['validator'] == 'custom' ? NULL : $this->get('validator'));
 			$fields['override'] = $this->get('override');
-			//$fields['directory'] = $fields['directory'];
 
 			return FieldManager::saveSettings($id, $fields);
 		}
@@ -138,9 +140,134 @@
 			
 		}
 		
+		/* Check postFieldData
+		/*
+		/*
+		*/
+		public function checkPostFieldData($data, &$message, $entry_id=NULL){
+			/**
+			 * For information about PHPs upload error constants see:
+			 * @link http://php.net/manual/en/features.file-upload.errors.php
+			 */
+			$message = null;
+
+			$data['directory'] = $_POST['fields']['image']['directory'];
+			
+			var_dump($data);die;
+			
+			if (
+				empty($data)
+				|| (
+					is_array($data)
+					&& isset($data['error'])
+					&& $data['error'] == UPLOAD_ERR_NO_FILE
+				)
+			) {
+				if ($this->get('required') == 'yes') {
+					$message = __('‘%s’ is a required field.', array($this->get('label')));
+
+					return self::__MISSING_FIELDS__;
+				}
+
+				return self::__OK__;
+			}
+
+			// Its not an array, so just retain the current data and return
+			if (is_array($data) === false) {
+				/**
+				 * Ensure the file exists in the `WORKSPACE` directory
+				 * @link http://symphony-cms.com/discuss/issues/view/610/
+				 */
+				$file = WORKSPACE . preg_replace(array('%/+%', '%(^|/)\.\./%'), '/', $data);
+
+				if (file_exists($file) === false || !is_readable($file)) {
+					$message = __('The file uploaded is no longer available. Please check that it exists, and is readable.');
+
+					return self::__INVALID_FIELDS__;
+				}
+
+				// Ensure that the file still matches the validator and hasn't
+				// changed since it was uploaded.
+				if ($this->get('validator') != null) {
+					$rule = $this->get('validator');
+
+					if (General::validateString($file, $rule) === false) {
+						$message = __('File chosen in ‘%s’ does not match allowable file types for that field.', array(
+							$this->get('label')
+						));
+
+						return self::__INVALID_FIELDS__;
+					}
+				}
+
+				return self::__OK__;
+			}
+
+			if (is_dir(DOCROOT . $this->get('destination') . '/') === false) {
+				$message = __('The destination directory, %s, does not exist.', array(
+					'<code>' . $this->get('destination') . '</code>'
+				));
+
+				return self::__ERROR__;
+			}
+
+			else if (is_writable(DOCROOT . $this->get('destination') . '/') === false) {
+				$message = __('Destination folder is not writable.')
+					. ' '
+					. __('Please check permissions on %s.', array(
+						'<code>' . $this->get('destination') . '</code>'
+					));
+
+				return self::__ERROR__;
+			}
+
+			if ($data['error'] != UPLOAD_ERR_NO_FILE && $data['error'] != UPLOAD_ERR_OK) {
+				switch ($data['error']) {
+					case UPLOAD_ERR_INI_SIZE:
+						$message = __('File chosen in ‘%1$s’ exceeds the maximum allowed upload size of %2$s specified by your host.', array($this->get('label'), (is_numeric(ini_get('upload_max_filesize')) ? General::formatFilesize(ini_get('upload_max_filesize')) : ini_get('upload_max_filesize'))));
+						break;
+
+					case UPLOAD_ERR_FORM_SIZE:
+						$message = __('File chosen in ‘%1$s’ exceeds the maximum allowed upload size of %2$s, specified by Symphony.', array($this->get('label'), General::formatFilesize($_POST['MAX_FILE_SIZE'])));
+						break;
+
+					case UPLOAD_ERR_PARTIAL:
+					case UPLOAD_ERR_NO_TMP_DIR:
+						$message = __('File chosen in ‘%s’ was only partially uploaded due to an error.', array($this->get('label')));
+						break;
+
+					case UPLOAD_ERR_CANT_WRITE:
+						$message = __('Uploading ‘%s’ failed. Could not write temporary file to disk.', array($this->get('label')));
+						break;
+
+					case UPLOAD_ERR_EXTENSION:
+						$message = __('Uploading ‘%s’ failed. File upload stopped by extension.', array($this->get('label')));
+						break;
+				}
+
+				return self::__ERROR_CUSTOM__;
+			}
+
+			// Sanitize the filename
+			$data['name'] = Lang::createFilename($data['name']);
+
+			if ($this->get('validator') != null) {
+				$rule = $this->get('validator');
+
+				if (!General::validateString($data['name'], $rule)) {
+					$message = __('File chosen in ‘%s’ does not match allowable file types for that field.', array($this->get('label')));
+
+					return self::__INVALID_FIELDS__;
+				}
+			}
+
+			return self::__OK__;
+		}
+		
+		
 		public function processRawFieldData($data, &$status, &$message=null, $simulate=false, $entry_id=NULL){
 			$status = self::__OK__;
-
+			
 			
 			
 			//fixes bug where files are deleted, but their database entries are not.
@@ -161,6 +288,8 @@
 				// @link http://symphony-cms.com/discuss/issues/view/610/
 				$file = WORKSPACE . preg_replace(array('%/+%', '%(^|/)\.\./%'), '/', $data);
 
+				
+				
 				$result = array(
 					'file' => $data,
 					'mimetype' => NULL,
@@ -203,14 +332,14 @@
 			//
 			//
 			
-			$select = $_POST['fields']['directory'];
-			//var_dump($data,$select);die;
+			$select = $_POST['image']['directory'];
+
 			$override_path = $this->get('override') == 'yes' ? '/workspace/uploads/newdirectory' : trim($this->get('destination'));
 			$abs_path = DOCROOT . $override_path . '/';
 			$rel_path = str_replace('/workspace', '', $override_path);
 			$existing_file = NULL;
 			
-			//var_dump($abs_path,$rel_path,$existing_file,$override_path,$select,$_POST,$_FILES);die;
+			var_dump($_POST,$_FILES,$data);die;
 
 			if(!is_null($entry_id)) {
 				$row = Symphony::Database()->fetchRow(0, sprintf(

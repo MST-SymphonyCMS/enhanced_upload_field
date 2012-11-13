@@ -40,7 +40,7 @@
 		public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null){
 			
 			Administration::instance()->Page->addStylesheetToHead(URL . '/extensions/enhanced_upload_field/assets/style.css', 'screen');
-			Administration::instance()->Page->addScriptToHead(URL . '/extensions/enhanced_upload_field/assets/script.enhanced_upload_field.js', 120);
+			Administration::instance()->Page->addScriptToHead(URL . '/extensions/enhanced_upload_field/assets/script.enhanced_upload_field.js', 80);
 		
 			//These 2 functions will need to be addressed as they refer to the destination directory in the field table.. we need a foreach on every upload field table entry to check the folder they refer to exists.
 		
@@ -64,7 +64,10 @@
 				'/workspace/utilities'
 			);
 			
-			$directories = General::listDirStructure(WORKSPACE , null, true, DOCROOT, $ignore);
+			//Select only the Child directories of the Section Editor Chosen Directory
+			$overridedirectories = str_replace('/workspace','',$this->get('destination'));
+			
+			$directories = General::listDirStructure(WORKSPACE . $overridedirectories , null, true, DOCROOT, $ignore);
 			
 			$options = array();
 			$options[] = array($this->get('destination'), false, $this->get('destination'));

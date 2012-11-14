@@ -2,7 +2,6 @@
 
 	if (!defined('__IN_SYMPHONY__')) die('<h2>Symphony Error</h2><p>You cannot directly access this file</p>');
 
-	//require_once(TOOLKIT.'/fields/field.upload.php');
 	require_once(TOOLKIT . '/fields/field.upload.php');
 
 	Class fieldEnhanced_Upload extends FieldUpload {
@@ -15,6 +14,54 @@
 	
 		}
 		
+		/*-------------------------------------------------------------------------
+		Definition:
+		-------------------------------------------------------------------------*/
+
+		public function canFilter() {
+			return true;
+		}
+
+		public function canPrePopulate(){
+			return true;
+		}
+
+		public function isSortable(){
+			return true;
+		}
+		
+		
+		/*-------------------------------------------------------------------------
+		Utilities:
+		-------------------------------------------------------------------------*/
+
+		public function entryDataCleanup($entry_id, $data=NULL){
+		
+			$file_location = WORKSPACE . '/' . ltrim($data['file'], '/');
+
+			if(is_file($file_location)){
+				General::deleteFile($file_location);
+			}
+
+			parent::entryDataCleanup($entry_id);
+
+			return true;
+		}
+
+		public static function getMetaInfo($file, $type){
+			$meta = array();
+
+			if(!file_exists($file) || !is_readable($file)) return $meta;
+
+			$meta['creation'] = DateTimeObj::get('c', filemtime($file));
+
+			if(General::in_iarray($type, fieldUpload::$imageMimeTypes) && $array = @getimagesize($file)){
+				$meta['width'] = $array[0];
+				$meta['height'] = $array[1];
+			}
+
+			return $meta;
+		}
 		
 		/*-------------------------------------------------------------------------
 			Settings:
@@ -85,7 +132,7 @@
 				
 				$override = new XMLELement('span', NULL, array('class' => 'enhanced_upload'));
 				//Allow selection of a child folder to upload the image
-				$choosefolder = Widget::Select('fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix.'[directory]', $options, array('class' => 'enhanced_upload_select_'.(!$data['file'] ? 'show':'hidden')));
+				$choosefolder = Widget::Select('fields[enhanced_upload_field]'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix.'[directory]', $options, array('class' => 'enhanced_upload_select_'.(!$data['file'] ? 'show':'hidden')));
 				//$choosefolder = Widget::Select('directory', $options, array('class' => 'enhanced_upload_select_'.(!$data['file'] ? 'show':'hidden')));
 				$override->appendChild($choosefolder);
 				$label->appendChild($override);
@@ -124,7 +171,22 @@
 			return FieldManager::saveSettings($id, $fields);
 		}
 	
+		public function checkFields(array &$errors, $checkForDuplicates = true){
+			if(!is_dir(DOCROOT . $this->get('destination') . '/')){
+				$errors['destination'] = __('The destination directory, %s, does not exist.', array('<code>' . $this->get('destination') . '</code>'));
+			}
+
+			elseif(!is_writable(DOCROOT . $this->get('destination') . '/')){
+				$errors['destination'] = __('The destination directory is not writable.') . ' ' . __('Please check permissions on %s.', array('<code>' . $this->get('destination') . '</code>'));
+			}
+
+			parent::checkFields($errors, $checkForDuplicates);
+		}
+	
+	
 		public function prepareTableValue($data, XMLElement $link=NULL, $entry_id = null){
+			
+			//var_dump($data);
 			
 			if(!$file = $data['file']){
 				if($link) return parent::prepareTableValue(null, $link);
@@ -175,6 +237,8 @@
 				 */
 				$file = WORKSPACE . preg_replace(array('%/+%', '%(^|/)\.\./%'), '/', $data);
 
+				//var_dump($data['file']);
+				
 				if (file_exists($file) === false || !is_readable($file)) {
 					$message = __('The file uploaded is no longer available. Please check that it exists, and is readable.');
 
@@ -316,8 +380,10 @@
 			
 			//My special Select box alteration :P
 			
+			//var_dump($_POST['fields']['enhanced_upload_field'][$this->get('element_name')]['directory'],$_POST);die;
+			//var_dump($_POST);
 			// Upload the new file
-			$override_path = $this->get('override') == 'yes' ? $_POST['fields'][$this->get('element_name')]['directory'] : trim($this->get('destination'));
+			$override_path = $this->get('override') == 'yes' ? $_POST['fields']['enhanced_upload_field'][$this->get('element_name')]['directory'] : trim($this->get('destination'));
 			$abs_path = DOCROOT . $override_path . '/';
 			$rel_path = str_replace('/workspace', '', $override_path);
 			$existing_file = NULL;
@@ -381,7 +447,7 @@
 				$data['type'] = (function_exists('mime_content_type') ? mime_content_type($file) : 'application/octet-stream');
 			}
 
-			//var_dump($data,$data[$this->get('element_name')]['directory']);die;
+			//var_dump($_POST);
 			
 			return array(
 				'file' => $file,

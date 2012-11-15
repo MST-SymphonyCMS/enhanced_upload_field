@@ -123,24 +123,23 @@
 
 			if($this->get('required') != 'yes') $label->appendChild(new XMLElement('i', __('Optional')));
 			
+			//Start of input/upload field code
+			$span = new XMLElement('span', NULL, array('class' => 'enhanced_frame enhanced_upload'));
+			//Render the upload field or reflect the uploaded file stored in DB.
+			if($data['file']) $span->appendChild(Widget::Anchor('/workspace' . $data['file'], URL . '/workspace' . $data['file'], null, 'enhanced_file'));			
+			
+			$span->appendChild(Widget::Input('fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix, $data['file'], ($data['file'] ? 'hidden' : 'file'), array('class'=>'enhanced_file')));
+			
 			if($this->get('override') == 'yes'){
 				
-				$override = new XMLELement('span', NULL, array('class' => 'enhanced_upload'));
+				//$override = new XMLELement('span', NULL, array('class' => 'enhanced_upload'));
 				//Allow selection of a child folder to upload the image
 				$choosefolder = Widget::Select('fields[enhanced_upload_field]'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix.'[directory]', $options, array('class' => 'enhanced_upload_select_'.(!$data['file'] ? 'show':'hidden')));
 				//$choosefolder = Widget::Select('directory', $options, array('class' => 'enhanced_upload_select_'.(!$data['file'] ? 'show':'hidden')));
-				$override->appendChild($choosefolder);
-				$label->appendChild($override);
+				$span->appendChild($choosefolder);
+				//$label->appendChild($override);
 			
 			}
-			
-			$span = new XMLElement('span', NULL, array('class' => 'frame enhanced_upload'));
-			
-			//Render the upload field or reflect the uploaded file stored in DB.
-			if($data['file']) $span->appendChild(new XMLElement('span', Widget::Anchor('/workspace' . $data['file'], URL . '/workspace' . $data['file'])));			
-			
-			$span->appendChild(Widget::Input('fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix, $data['file'], ($data['file'] ? 'hidden' : 'file')));
-			
 			
 			$label->appendChild($span);
 

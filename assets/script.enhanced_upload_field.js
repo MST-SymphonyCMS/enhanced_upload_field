@@ -2,20 +2,7 @@
 	$(document).ready(function(){
 		
 		// Upload fields
-		$('em').click(function(){
-		
-			var poop = $(this).parent();
-		//$(this).parent().parent().children().addClass("clicked");
-
-		//alert(poop);
-		
-			poop.closest('.enhanced_upload select.enhanced_upload_select_hidden').addClass("clicked");
-			$('.enhanced_upload select.enhanced_upload_select_hidden').addClass('show');
-		
-		});
-		
-		// Upload fields
-		/*$('<em>' + Symphony.Language.get('Remove File') + '</em>').appendTo('label.file:has(a) span.frame').on('click.admin', function(event) {
+		$('<em>' + Symphony.Language.get('Remove File') + '</em>').appendTo('label.file:has(a) span.enhanced_frame').on('click.admin', function(event) {
 			var span = $(this).parent(),
 				name = span.find('input').attr('name');
 
@@ -23,10 +10,12 @@
 			event.preventDefault();
 			
 			//Show selectbox
-			span.closest('.enhanced_upload select.enhanced_upload_select_hidden').addClass("clicked");
+			span.find('select.enhanced_upload_select_hidden').addClass("show");
 			// Add new empty file input
-			span.empty().append('<input name="' + name + '" type="file">');
-		});*/
+			span.find('a.enhanced_file, input.enhanced_file').remove();
+			span.prepend('<input name="' + name + '" type="file">');
+			span.find('em').remove();
+		}); 
 
 	
 			

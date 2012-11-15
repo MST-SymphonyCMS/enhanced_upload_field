@@ -1,6 +1,6 @@
 select.enhanced_upload_select_show{
 	
-	display:block;
+	display:block;float:left;width:40%;
 	
 }
 select.enhanced_upload_select_hidden{

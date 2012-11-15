@@ -1,55 +1,46 @@
 <?php
+	
+	require_once(TOOLKIT . '/class.alert.php');
+	
     class Extension_Enhanced_Upload_Field extends Extension {
 
     const FIELD_TABLE = 'tbl_fields_enhanced_upload';
+	const FIELD_NAME = 'enhanced_upload';
 
     public function getSubscribedDelegates(){
 			return array(
 						array(
-							'page' => '/system/preferences/',
-							'delegate' => 'AddCustomPreferenceFieldsets',
-							'callback' => 'appendPreferences'
+							'page' => '/backend/',
+							'delegate' => 'AdminPagePreGenerate',
+							'callback' => '__appendAssets'
 						),
-						
-						array(
-							'page' => '/system/preferences/',
-							'delegate' => 'Save',
-							'callback' => 'savePreferences'
-						),						
 					);
     }
+	
+	public static function hasInstance($ext_name=NULL, $section_handle)
+    {
 		
-    public function savePreferences($context){
-			
-			$pairs = array();
-			
-			$conf = array_map('trim', $context['settings']['enhanced-upload-field']);
-			
-			$context['settings']['enhanced-upload-field'] = array(
-				'override-path' => (isset($conf['override-path']) ? 'yes' : 'no')		
-			);
-
+        $sid  = SectionManager::fetchIDFromHandle($section_handle);
+        $section = SectionManager::fetch($sid);
+        $fm = $section->fetchFields($ext_name);
+        return is_array($fm) && !empty($fm);
     }
-
-    public function appendPreferences($context){
-			
-			$fieldset = new XMLElement('fieldset');
-			$fieldset->setAttribute('class', 'settings');
-			$fieldset->appendChild(new XMLElement('legend', __('Enhanced Upload Field')));
-			$ul = new XMLElement('ul');
-			$ul->setAttribute('class', 'group');
-			$li = new XMLElement('li');
-			$label = Widget::Label();
-			$input = Widget::Input('settings[enhanced-upload-field][override-path]', 'yes', 'checkbox');
-			if(Symphony::Configuration()->get('override-path', 'enhanced-upload-field') == 'yes') $input->setAttribute('checked', 'checked');
-			$label->setValue($input->generate() . __('Allow ability to override'));
-			$li->appendChild($label);		
-			$ul->appendChild($li);			
-			$fieldset->appendChild($ul);
-			
-			$context['wrapper']->appendChild($fieldset);				
+	
+	/**
+	* append needed css an js files to the document head
+    */
+    public function __appendAssets($context)
+    {
+        $callback = Symphony::Engine()->getPageCallback();
+		
+        // Append styles for publish area
+        if ($callback['driver'] == 'publish' && $callback['context']['page'] != 'index') {
+            if (self::hasInstance('enhanced_upload', $callback['context']['section_handle'])) {
+                Administration::instance()->Page->addStylesheetToHead(URL . '/extensions/enhanced_upload_field/assets/style.css', 'screen', 100, false);
+				Administration::instance()->Page->addScriptToHead(URL . '/extensions/enhanced_upload_field/assets/script.enhanced_upload_field.js', 80, false);
+            }
+        }
     }
-
 
     public function uninstall(){
     	
@@ -64,15 +55,10 @@
 			}
 
 			return true;
-				
-			Symphony::Configuration()->remove('enhanced-upload-field');			
-			
-			Administration::instance()->saveConfig();
 							
 	}
 
-
-		public function install(){
+	public function install(){
 			return Symphony::Database()->query(sprintf(
 				"CREATE TABLE `%s` (
 					`id` int(11) unsigned NOT NULL auto_increment,
@@ -86,10 +72,6 @@
 				) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;",
 				self::FIELD_TABLE
 			));
-	
-			Symphony::Configuration()->set('override-path', 'no', 'enhanced-upload-field');
-		
-			Administration::instance()->saveConfig();
 			
     }
 }

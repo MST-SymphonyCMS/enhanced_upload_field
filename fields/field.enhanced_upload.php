@@ -85,11 +85,6 @@
 		-------------------------------------------------------------------------*/
 
 		public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null){
-			
-			Administration::instance()->Page->addStylesheetToHead(URL . '/extensions/enhanced_upload_field/assets/style.css', 'screen');
-			Administration::instance()->Page->addScriptToHead(URL . '/extensions/enhanced_upload_field/assets/script.enhanced_upload_field.js', 80);
-		
-			//These 2 functions will need to be addressed as they refer to the destination directory in the field table.. we need a foreach on every upload field table entry to check the folder they refer to exists.
 		
 			if(!is_dir(DOCROOT . $this->get('destination') . '/')){
 				$flagWithError = __('The destination directory, %s, does not exist.', array('<code>' . $this->get('destination') . '</code>'));

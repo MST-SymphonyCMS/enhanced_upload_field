@@ -11,14 +11,13 @@
 
 			$this->_name = __('Enhanced File Upload');
 			$this->set('override', 'no');
-	
 		}
 		
 		/*-------------------------------------------------------------------------
 		Definition:
 		-------------------------------------------------------------------------*/
 
-		public function canFilter() {
+		/*public function canFilter() {
 			return true;
 		}
 
@@ -29,21 +28,23 @@
 		public function isSortable(){
 			return true;
 		}
-		
+		*/
 		
 		/*-------------------------------------------------------------------------
 		Utilities:
 		-------------------------------------------------------------------------*/
 
-		public function entryDataCleanup($entry_id, $data=NULL){
+		/*public function entryDataCleanup($entry_id, $data=NULL){
+		
+			// clean the parent first
+			parent::entryDataCleanup($entry_id);
 		
 			$file_location = WORKSPACE . '/' . ltrim($data['file'], '/');
 
-			if(is_file($file_location)){
-				General::deleteFile($file_location);
+			if(is_file($file_location)) {
+				// inform caller that our operation as been successful
+				return General::deleteFile($file_location);
 			}
-
-			parent::entryDataCleanup($entry_id);
 
 			return true;
 		}
@@ -61,42 +62,54 @@
 			}
 
 			return $meta;
-		}
+		}*/
 		
 		/*-------------------------------------------------------------------------
 			Settings:
 		-------------------------------------------------------------------------*/
 
-        public function displaySettingsPanel(XMLElement &$wrapper, $errors = null) {
-        	
-        	parent::displaySettingsPanel($wrapper, $errors);
+		public function displaySettingsPanel(XMLElement &$wrapper, $errors = null) {
 			
+			parent::displaySettingsPanel($wrapper, $errors);
+			
+			// append our own settings
 			$label = new XMLElement('label');
-            $input = Widget::Input("fields[{$this->get('sortorder')}][override]", 'yes', 'checkbox');
+			$input = Widget::Input("fields[{$this->get('sortorder')}][override]", 'yes', 'checkbox');
 			if( $this->get('override') == 'yes' ) $input->setAttribute('checked', 'checked');
 			$label->setValue(__('%s Allow overriding of upload directory in entries', array($input->generate())));
 
 			$wrapper->appendChild($label);
 
-        }
+		}
 
 		/*-------------------------------------------------------------------------
 			Publish:
 		-------------------------------------------------------------------------*/
 
-		public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null){
-		
-			if(!is_dir(DOCROOT . $this->get('destination') . '/')){
-				$flagWithError = __('The destination directory, %s, does not exist.', array('<code>' . $this->get('destination') . '</code>'));
+		private function getChildrenWithClass(XMLElement &$rootElement, $tagName, $className) {
+			if ($rootElement == NULL ) {
+				return NULL;
 			}
 			
-			elseif(!$flagWithError && !is_writable(DOCROOT . $this->get('destination') . '/')){
-				$flagWithError = __('Destination folder is not writable.') . ' ' . __('Please check permissions on %s.', array('<code>' . $this->get('destination') . '</code>'));
+			// contains the right css class and the right node name
+			if (strpos($rootElement->getAttribute('class'), $className) > -1 && $rootElement->getName() == $tagName) {
+				return $rootElement;
 			}
-
-			$label = Widget::Label($this->get('label'));
-			$label->setAttribute('class', 'file');
-
+			
+			// recursive search in child elements
+			foreach ($rootElement->getChildren() as $key => $child) {
+				
+				$res = $this->getChildrenWithClass($child, $tagName, $className);
+				
+				if ($res != NULL) {
+					return $res;
+				}
+			}
+			
+			return NULL;
+		}
+		
+		private function getSubDirectoriesOptions() {
 			// Destination Folder
 			$ignore = array(
 				'/workspace/events',
@@ -109,7 +122,7 @@
 			//Select only the Child directories of the Section Editor Chosen Directory
 			$overridedirectories = str_replace('/workspace','',$this->get('destination'));
 			
-			$directories = General::listDirStructure(WORKSPACE . $overridedirectories , null, true, DOCROOT, $ignore);
+			$directories = General::listDirStructure(WORKSPACE . $overridedirectories, null, true, DOCROOT, $ignore);
 			
 			$options = array();
 			$options[] = array($this->get('destination'), false, $this->get('destination'));
@@ -120,6 +133,25 @@
 					if(!in_array($d, $ignore)) $options[] = array($d, ($this->get('destination') == $d), $d);
 				}
 			}
+			return $options;
+		}
+		
+		public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null){
+		/*
+			if(!is_dir(DOCROOT . $this->get('destination') . '/')){
+				$flagWithError = __('The destination directory, %s, does not exist.', array('<code>' . $this->get('destination') . '</code>'));
+			}
+			
+			elseif(!$flagWithError && !is_writable(DOCROOT . $this->get('destination') . '/')){
+				$flagWithError = __('Destination folder is not writable.') . ' ' . __('Please check permissions on %s.', array('<code>' . $this->get('destination') . '</code>'));
+			}
+
+			$label = Widget::Label($this->get('label'));
+			$label->setAttribute('class', 'file');
+
+			
+			
+			
 
 			if($this->get('required') != 'yes') $label->appendChild(new XMLElement('i', __('Optional')));
 			
@@ -129,43 +161,64 @@
 			if($data['file']) $span->appendChild(Widget::Anchor('/workspace' . $data['file'], URL . '/workspace' . $data['file'], null, 'enhanced_file'));			
 			
 			$span->appendChild(Widget::Input('fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix, $data['file'], ($data['file'] ? 'hidden' : 'file'), array('class'=>'enhanced_file')));
+			*/
 			
-			if($this->get('override') == 'yes'){
+			parent::displayPublishPanel($wrapper, $data, $flagWithError, $fieldnamePrefix, $fieldnamePostfix, $entry_id);
+			
+			if ($this->get('override') == 'yes') {
 				
-				//$override = new XMLELement('span', NULL, array('class' => 'enhanced_upload'));
-				//Allow selection of a child folder to upload the image
-				$choosefolder = Widget::Select('fields[enhanced_upload_field]'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix.'[directory]', $options, array('class' => 'enhanced_upload_select_'.(!$data['file'] ? 'show':'hidden')));
-				//$choosefolder = Widget::Select('directory', $options, array('class' => 'enhanced_upload_select_'.(!$data['file'] ? 'show':'hidden')));
-				$span->appendChild($choosefolder);
-				//$label->appendChild($override);
+				
+				
+				// recursive find
+				$span = $this->getChildrenWithClass($wrapper, 'span', 'frame');
+				
+				//var_dump($wrapper);
+				
+				if ($span != NULL) {
+				
+					$options = $this->getSubDirectoriesOptions();
+				
+					//$override = new XMLELement('span', NULL, array('class' => 'enhanced_upload'));
+					//Allow selection of a child folder to upload the image
+					$choosefolder = Widget::Select(
+						'fields[enhanced_upload_field]'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix.'[directory]',
+						$options
+						/*array(
+							'class' => 'enhanced_upload_select_'.(!$data['file'] ? 'show':'hidden')
+						)*/
+					);
+					//$choosefolder = Widget::Select('directory', $options, array('class' => 'enhanced_upload_select_'.(!$data['file'] ? 'show':'hidden')));
+					$span->appendChild($choosefolder);
+					//$label->appendChild($override);
+				}
 			
 			}
 			
-			$label->appendChild($span);
+			/*$label->appendChild($span);
 
 			if($flagWithError != NULL) $wrapper->appendChild(Widget::Error($label, $flagWithError));
 			else $wrapper->appendChild($label);
-		
+		*/
 		}
 
-    	public function commit(){
-    		
-		if(!parent::commit()) return false;
+		public function commit(){
+			
+			if(!parent::commit()) return false;
 		
 			$id = $this->get('id');
 
-			if($id === false) return false;
+			//if($id === false) return false;
 
 			$fields = array();
 
-			$fields['destination'] = $this->get('destination');
-			$fields['validator'] = ($fields['validator'] == 'custom' ? NULL : $this->get('validator'));
+			//$fields['destination'] = $this->get('destination');
+			//$fields['validator'] = ($fields['validator'] == 'custom' ? NULL : $this->get('validator'));
 			$fields['override'] = $this->get('override');
 
 			return FieldManager::saveSettings($id, $fields);
 		}
 	
-		public function checkFields(array &$errors, $checkForDuplicates = true){
+		/*public function checkFields(array &$errors, $checkForDuplicates = true){
 			if(!is_dir(DOCROOT . $this->get('destination') . '/')){
 				$errors['destination'] = __('The destination directory, %s, does not exist.', array('<code>' . $this->get('destination') . '</code>'));
 			}
@@ -175,7 +228,7 @@
 			}
 
 			parent::checkFields($errors, $checkForDuplicates);
-		}
+		}*/
 	
 	
 		public function prepareTableValue($data, XMLElement $link=NULL, $entry_id = null){
@@ -183,8 +236,7 @@
 			//var_dump($data);
 			
 			if(!$file = $data['file']){
-				if($link) return parent::prepareTableValue(null, $link);
-				else return parent::prepareTableValue(null);
+				return parent::prepareTableValue(null, $link);
 			}
 
 			if($link){
@@ -192,19 +244,19 @@
 				return $link->generate();
 			}
 
-			else{
+			else {
 				$link = Widget::Anchor(basename($file), URL . '/workspace' . $file);
 				return $link->generate();
 			}
 			
 		}
 			
-		public function checkPostFieldData($data, &$message, $entry_id=NULL){
+		/*public function checkPostFieldData($data, &$message, $entry_id=NULL){
 			/**
 			 * For information about PHPs upload error constants see:
 			 * @link http://php.net/manual/en/features.file-upload.errors.php
 			 */
-			$message = null;
+			/*$message = null;
 			
 			if (
 				empty($data)
@@ -229,7 +281,7 @@
 				 * Ensure the file exists in the `WORKSPACE` directory
 				 * @link http://symphony-cms.com/discuss/issues/view/610/
 				 */
-				$file = WORKSPACE . preg_replace(array('%/+%', '%(^|/)\.\./%'), '/', $data);
+				/*$file = WORKSPACE . preg_replace(array('%/+%', '%(^|/)\.\./%'), '/', $data);
 
 				//var_dump($data['file']);
 				
@@ -315,10 +367,10 @@
 			}
 
 			return self::__OK__;
-		}
+		}*/
 		
 		
-		public function processRawFieldData($data, &$status, &$message=null, $simulate=false, $entry_id=NULL){
+		/*public function processRawFieldData($data, &$status, &$message=null, $simulate=false, $entry_id=NULL){
 			$status = self::__OK__;
 			
 			//fixes bug where files are deleted, but their database entries are not.
@@ -451,7 +503,7 @@
 			);
 			
 			
-		}
+		}*/
 	
 		
 }

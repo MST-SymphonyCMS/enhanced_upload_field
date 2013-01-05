@@ -18,7 +18,6 @@
 		}
 		
 		public static function hasInstance($ext_name=NULL, $section_handle) {
-			
 			$sid  = SectionManager::fetchIDFromHandle($section_handle);
 			$section = SectionManager::fetch($sid);
 			$fm = $section->fetchFields($ext_name);

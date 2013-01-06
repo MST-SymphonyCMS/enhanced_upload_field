@@ -182,6 +182,15 @@
 			return FieldManager::saveSettings($this->get('id'), $fields);
 		}
 
+		private function revertData(&$data) {
+			// check to see if there is really a file
+			if (count($data) == 1 && isset($data['file'])) {
+				// revert to what the parent is expecting
+				$data = $data['file'];
+			}
+			return $data;
+		}
+
 		public function checkPostFieldData($data, &$message, $entry_id=NULL) {
 			// the parent destination
 			$destination = $this->get('destination');
@@ -195,11 +204,8 @@
 			// affect any other methods.
 			unset($data['directory']);
 
-			// check to see if there is really a file
-			if (count($data) == 1 && isset($data['file'])) {
-				// revert to what the parent is expecting
-				$data = $data['file'];
-			}
+			// revert to what the parent is expecting
+			$data = $this->revertData($data);
 
 			// validate our part
 			if (strlen(trim($dir)) == 0) {
@@ -226,7 +232,6 @@
 			return $status;
 		}
 
-
 		public function processRawFieldData($data, &$status, &$message=null, $simulate=false, $entry_id=NULL) {
 			// execute logic only once est resuse
 			// although this is pretty clear we will now
@@ -241,11 +246,8 @@
 				unset($data['directory']);
 			}
 
-			// check to see if there is really a file
-			if (count($data) == 1 && isset($data['file'])) {
-				// revert to what the parent is expecting
-				$data = $data['file'];
-			}
+			// revert to what the parent is expecting
+			$data = $this->revertData($data);
 
 			//var_dump($data);die;
 

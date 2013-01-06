@@ -70,8 +70,18 @@
 			return NULL;
 		}
 
+		// from: http://stackoverflow.com/questions/834303/php-startswith-and-endswith-functions
+		private static function endsWith($haystack,$needle,$case=true) {
+			$expectedPosition = strlen($haystack) - strlen($needle);
+
+			if($case) {
+				return strrpos($haystack, $needle, 0) === $expectedPosition;
+			}
+			return strripos($haystack, $needle, 0) === $expectedPosition;
+		}
+
 		// Utility function to build the select box's options
-		private function getSubDirectoriesOptions() {
+		private function getSubDirectoriesOptions($data) {
 			// Ignored Folder
 			$ignore = array(
 				'/workspace/events',
@@ -107,9 +117,19 @@
 					// we have the proper pattern
 					$d = '/' . trim($d, '/') . '/';
 					if(!in_array($d, $ignore)) {
+
+						$isSelected = false;
+
+						// if we have data
+						if (!empty($data) && isset($data['file'])) {
+							//var_dump($data);die;
+							$path = dirname($data['file']);
+							$isSelected = self::endsWith($d, $path);
+						}
+
 						$options[] = array(
 							$d,
-							$destination == $d,
+							$isSelected,
 							str_replace($destination, '', $d)
 						);
 					}
@@ -119,6 +139,18 @@
 		}
 
 		public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null){
+
+			// BEWARE
+			// LINE 186 in field.upload.php has a bug in 2.3.1
+			// it need to get rid of the extra === false a the end of the line
+			// https://github.com/symphonycms/symphony-2/blob/master/symphony/lib/toolkit/fields/field.upload.php#L186
+			// you need to get it fixed because if not, errors
+			// messages from checkPostFieldData will get ovewritten
+
+			/*if (!!$flagWithError){
+				var_dump(is_writable(DOCROOT . $this->get('destination')));
+				var_dump($flagWithError);die;
+			}*/
 
 			// Let the upload field do it's job
 			parent::displayPublishPanel($wrapper, $data, $flagWithError, $fieldnamePrefix, $fieldnamePostfix, $entry_id);
@@ -133,7 +165,7 @@
 				if ($span != NULL) {
 
 					// get subdirectories
-					$options = $this->getSubDirectoriesOptions();
+					$options = $this->getSubDirectoriesOptions($data);
 
 					// allow selection of a child folder to upload the image
 					$choosefolder = Widget::Select(
@@ -227,7 +259,7 @@
 				$this->set('destination', $destination);
 			}
 
-			//var_dump($status);var_dump($message);die;
+			//var_dump($status);var_dump($message);//die;
 
 			return $status;
 		}

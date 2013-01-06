@@ -49,8 +49,11 @@
 
 			// contains the right css class and the right node name (if any)
 			// TODO: Use word bondaries instead of strpos
-			if (strpos($rootElement->getAttribute('class'), $className) > -1 &&
-			   (!$tagName || $rootElement->getName() == $tagName)) {
+			if (
+				(!$className || strpos($rootElement->getAttribute('class'), $className) > -1)
+				&&
+				(!$tagName || $rootElement->getName() == $tagName)
+			) {
 				return $rootElement;
 			}
 
@@ -132,7 +135,7 @@
 					// get subdirectories
 					$options = $this->getSubDirectoriesOptions();
 
-					//Allow selection of a child folder to upload the image
+					// allow selection of a child folder to upload the image
 					$choosefolder = Widget::Select(
 						'fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix.'[directory]',
 						$options
@@ -141,6 +144,20 @@
 					$span->appendChild($choosefolder);
 				}
 
+				// recursive find the hidden input
+				$hidden = $this->getChildrenWithClass($span, null, 'input');
+
+				// if we found it
+				if ($hidden != NULL) {
+					// change its name
+					// N.B. this is really important because of the
+					// way Symphony parses the $_POST array. You can't have
+					// both a literal value AND sub-values with the same key.
+					// Keys are either literals or containers. The upload field
+					// uses the fields[label] for it's value. We now have two values,
+					// file and directory, so we need to update the html accordingly.
+					$hidden->setAttribute('name', $hidden->getAttribute('name') . '[file]');
+				}
 			}
 		}
 
@@ -152,9 +169,13 @@
 			// get the commited data
 			$fields = array();
 
-			// add our own
+			// set our own
 			$fields['destination'] = rtrim(trim($this->get('destination')), '/');
 			$fields['override'] = $this->get('override');
+			// make sure we do not loose anything
+			// the field managers wants them all, since it `delete`s
+			// and `insert` instead of `update`
+			// TODO: Use $this->get() and remove the base fields (label, handle, ...) ?
 			$fields['validator'] = $this->get('validator');
 
 			// save
@@ -174,6 +195,12 @@
 			// affect any other methods.
 			unset($data['directory']);
 
+			// check to see if there is really a file
+			if (count($data) == 1 && isset($data['file'])) {
+				// revert to what the parent is expecting
+				$data = $data['file'];
+			}
+
 			// validate our part
 			if (strlen(trim($dir)) == 0) {
 				$message = __('‘%s’ needs to have a directory setted.', array($this->get('label')));
@@ -184,6 +211,8 @@
 				// make the parent think this is the good directory
 				$this->set('destination', $dir);
 
+				//var_dump($data);var_dump($entry_id);
+
 				// let the parent do its job
 				$status = parent::checkPostFieldData($data, $message, $entry_id);
 
@@ -192,7 +221,7 @@
 				$this->set('destination', $destination);
 			}
 
-			var_dump($status);var_dump($message);//die;
+			//var_dump($status);var_dump($message);die;
 
 			return $status;
 		}
@@ -200,23 +229,25 @@
 
 		public function processRawFieldData($data, &$status, &$message=null, $simulate=false, $entry_id=NULL) {
 			// execute logic only once est resuse
+			// although this is pretty clear we will now
+			// always have an array!
 			$dataIsArray = is_array($data);
 			// get our data
 			$dir = $dataIsArray ? $data['directory'] : '';
 			// check if we have dir
-			$hasDir = isset($dir) && strlen(trim($dir)) > 0;
+			$hasDir = strlen(trim($dir)) > 0;
 			// remove our data from the array
 			if ($dataIsArray) {
 				unset($data['directory']);
 			}
 
-			// if we do not have enought data to play with
-			if ( !is_array($data) || empty($data) || !$hasDir) {
-				// let the parent do its job
-				return parent::processRawFieldData($data, $status, $message, $simulate, $entry_id);
+			// check to see if there is really a file
+			if (count($data) == 1 && isset($data['file'])) {
+				// revert to what the parent is expecting
+				$data = $data['file'];
 			}
 
-			var_dump($data);
+			//var_dump($data);die;
 
 			$status = self::__OK__;
 			$destination = $this->get('destination');

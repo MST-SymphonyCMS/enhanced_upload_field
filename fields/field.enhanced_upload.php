@@ -153,7 +153,7 @@
 			$fields = array();
 
 			// add our own
-			$fields['destination'] = rtrim($this->get('destination'), '/');
+			$fields['destination'] = rtrim(trim($this->get('destination')), '/');
 			$fields['override'] = $this->get('override');
 			$fields['validator'] = $this->get('validator');
 
@@ -162,14 +162,20 @@
 		}
 
 		public function checkPostFieldData($data, &$message, $entry_id=NULL) {
-
-			var_dump($data);
+			// the parent destination
 			$destination = $this->get('destination');
+			// our custom directory
 			$dir = $data['directory'];
+			// validation status - assume it's ok
 			$status = self::__OK__;
 
+			// Remove our data to make the parent validation works
+			// Since we receive $data by copy (not reference) we won't
+			// affect any other methods.
+			unset($data['directory']);
+
 			// validate our part
-			if (empty($dir)) {
+			if (strlen(trim($dir)) == 0) {
 				$message = __('‘%s’ needs to have a directory setted.', array($this->get('label')));
 
 				$status = self::__MISSING_FIELDS__;
@@ -182,28 +188,43 @@
 				$status = parent::checkPostFieldData($data, $message, $entry_id);
 
 				// reset to old value in order to prevent a bug
-				// in the display
+				// in the display methods
 				$this->set('destination', $destination);
 			}
+
+			var_dump($status);var_dump($message);//die;
 
 			return $status;
 		}
 
 
 		public function processRawFieldData($data, &$status, &$message=null, $simulate=false, $entry_id=NULL) {
+			// execute logic only once est resuse
+			$dataIsArray = is_array($data);
+			// get our data
+			$dir = $dataIsArray ? $data['directory'] : '';
+			// check if we have dir
+			$hasDir = isset($dir) && strlen(trim($dir)) > 0;
+			// remove our data from the array
+			if ($dataIsArray) {
+				unset($data['directory']);
+			}
+
 			// if we do not have enought data to play with
-			if ( !is_array($data) || empty($data) ) {
+			if ( !is_array($data) || empty($data) || !$hasDir) {
 				// let the parent do its job
 				return parent::processRawFieldData($data, $status, $message, $simulate, $entry_id);
 			}
+
+			var_dump($data);
 
 			$status = self::__OK__;
 			$destination = $this->get('destination');
 
 			// Upload the new file
-			if ($this->get('override') == 'yes' && isset($data['directory'])) {
+			if ($this->get('override') == 'yes' && $hasDir) {
 				// make the parent think this is the good directory
-				$this->set('destination', $data['directory']);
+				$this->set('destination', $dir);
 			}
 
 			// let the parent to its job
@@ -212,7 +233,7 @@
 			// reset parent value
 			$this->set('destination', $destination);
 
-			var_dump($values);
+			//var_dump($values);die;
 
 			return $values;
 		}

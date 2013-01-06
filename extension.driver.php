@@ -33,7 +33,6 @@
 			// Append styles for publish area
 			if ($callback['driver'] == 'publish' && $callback['context']['page'] != 'index') {
 				if (self::hasInstance('enhanced_upload', $callback['context']['section_handle'])) {
-					//Administration::instance()->Page->addStylesheetToHead(URL . '/extensions/enhanced_upload_field/assets/style.css', 'screen', 100, false);
 					Administration::instance()->Page->addScriptToHead(URL . '/extensions/enhanced_upload_field/assets/script.enhanced_upload_field.js', 80, false);
 				}
 			}

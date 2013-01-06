@@ -175,7 +175,6 @@
 			else {
 				// make the parent think this is the good directory
 				$this->set('destination', $dir);
-				var_dump($dir);
 
 				// let the parent do its job
 				parent::checkPostFieldData($data, $message, $entry_id);
@@ -197,23 +196,19 @@
 			}
 
 			$status = self::__OK__;
-
-			var_dump($data);
+			$destination = $this->get('destination');
 
 			// Upload the new file
-			$override_path = $this->get('override') == 'yes' ?
-				$_POST['fields']['enhanced_upload_field'][$this->get('element_name')]['directory'] :
-				trim($this->get('destination'));
-			$abs_path = DOCROOT . $override_path . '/';
-			$rel_path = str_replace('/workspace', '', $override_path);
+			if ($this->get('override') == 'yes' && isset($data['directory'])) {
+				// make the parent think this is the good directory
+				$this->set('destination', $data['directory']);
+			}
 
 			// let the parent to its job
 			$values = parent::processRawFieldData($data, $status, $message, $simulate, $entry_id);
 
-			var_dump($values);
-
-			// add our own value
-			$values['file'] = $rel_path;
+			// reset parent value
+			$this->set('destination', $destination);
 
 			return $values;
 		}

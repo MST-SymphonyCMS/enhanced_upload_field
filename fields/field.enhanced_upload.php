@@ -57,7 +57,7 @@
 			// recursive search in child elements
 			foreach ($rootElement->getChildren() as $key => $child) {
 
-				$res = $this->getChildrenWithClass($child, $tagName, $className);
+				$res = $this->getChildrenWithClass($child, $className, $tagName);
 
 				if ($res != NULL) {
 					return $res;
@@ -91,18 +91,24 @@
 			$options = array(
 				// Include the destination itself
 				array(
-					$destination,  // text
-					false,         // selected
-					$destination   // value
+					$destination, // value
+					false,        // selected
+					'/'           // text
 				)
 			);
 
 			// If we have found some sub-directories of the destination
 			if(!empty($directories) && is_array($directories)){
 				foreach($directories as $d) {
-					$d = '/' . trim($d, '/');
+					// remove all (begin and end) and assure
+					// we have the proper pattern
+					$d = '/' . trim($d, '/') . '/';
 					if(!in_array($d, $ignore)) {
-						$options[] = array($d, ($this->get('destination') == $d), $d);
+						$options[] = array(
+							$d,
+							$destination == $d,
+							str_replace($destination, '', $d)
+						);
 					}
 				}
 			}
@@ -118,7 +124,7 @@
 			if ($this->get('override') == 'yes') {
 
 				// recursive find our span.frame
-				$span = $this->getChildrenWithClass($wrapper, 'span', 'frame');
+				$span = $this->getChildrenWithClass($wrapper, 'frame');
 
 				// if we found it
 				if ($span != NULL) {
@@ -144,11 +150,12 @@
 			if(!parent::commit()) return false;
 
 			// get the commited data
-			$fields = $this->get();
+			$fields = array();
 
 			// add our own
 			$fields['destination'] = $this->get('destination');
 			$fields['override'] = $this->get('override');
+			$fields['validator'] = $this->get('validator');
 
 			// save
 			return FieldManager::saveSettings($this->get('id'), $fields);
@@ -156,6 +163,7 @@
 
 		public function checkPostFieldData($data, &$message, $entry_id=NULL) {
 
+			$destination = $this->get('destination');
 			$dir = $data['directory'];
 
 			// validate our part
@@ -166,12 +174,18 @@
 			}
 			else {
 				// make the parent think this is the good directory
-				$dest = $this->get('destination') . '/' . $dir;
-				$this->set('destination', $dest);
+				$this->set('destination', $dir);
+				var_dump($dir);
 
 				// let the parent do its job
 				parent::checkPostFieldData($data, $message, $entry_id);
+
+				// reset to old value in order to prevent a bug
+				// in the display
+				$this->set('destination', $destination);
 			}
+
+			return self::__OK__;
 		}
 
 
@@ -195,6 +209,8 @@
 
 			// let the parent to its job
 			$values = parent::processRawFieldData($data, $status, $message, $simulate, $entry_id);
+
+			var_dump($values);
 
 			// add our own value
 			$values['file'] = $rel_path;

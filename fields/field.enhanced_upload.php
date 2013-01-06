@@ -153,7 +153,7 @@
 			$fields = array();
 
 			// add our own
-			$fields['destination'] = $this->get('destination');
+			$fields['destination'] = rtrim($this->get('destination'), '/');
 			$fields['override'] = $this->get('override');
 			$fields['validator'] = $this->get('validator');
 
@@ -163,28 +163,30 @@
 
 		public function checkPostFieldData($data, &$message, $entry_id=NULL) {
 
+			var_dump($data);
 			$destination = $this->get('destination');
 			$dir = $data['directory'];
+			$status = self::__OK__;
 
 			// validate our part
 			if (empty($dir)) {
 				$message = __('‘%s’ needs to have a directory setted.', array($this->get('label')));
 
-				return self::__MISSING_FIELDS__;
+				$status = self::__MISSING_FIELDS__;
 			}
 			else {
 				// make the parent think this is the good directory
 				$this->set('destination', $dir);
 
 				// let the parent do its job
-				parent::checkPostFieldData($data, $message, $entry_id);
+				$status = parent::checkPostFieldData($data, $message, $entry_id);
 
 				// reset to old value in order to prevent a bug
 				// in the display
 				$this->set('destination', $destination);
 			}
 
-			return self::__OK__;
+			return $status;
 		}
 
 
@@ -209,6 +211,8 @@
 
 			// reset parent value
 			$this->set('destination', $destination);
+
+			var_dump($values);
 
 			return $values;
 		}

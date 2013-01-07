@@ -2,102 +2,87 @@
 
 	if (!defined('__IN_SYMPHONY__')) die('<h2>Symphony Error</h2><p>You cannot directly access this file</p>');
 
+	// Require the parent class, if not already loaded
 	require_once(TOOLKIT . '/fields/field.upload.php');
 
+	// Our new class extends the core one
 	Class fieldEnhanced_Upload extends FieldUpload {
-		
+
 		public function __construct(){
+			// use parent class
 			parent::__construct();
 
+			// overwrite the name
 			$this->_name = __('Enhanced File Upload');
+			// set defaults
 			$this->set('override', 'no');
-	
-		}
-		
-		/*-------------------------------------------------------------------------
-		Definition:
-		-------------------------------------------------------------------------*/
-
-		public function canFilter() {
-			return true;
 		}
 
-		public function canPrePopulate(){
-			return true;
-		}
-
-		public function isSortable(){
-			return true;
-		}
-		
-		
-		/*-------------------------------------------------------------------------
-		Utilities:
-		-------------------------------------------------------------------------*/
-
-		public function entryDataCleanup($entry_id, $data=NULL){
-		
-			$file_location = WORKSPACE . '/' . ltrim($data['file'], '/');
-
-			if(is_file($file_location)){
-				General::deleteFile($file_location);
-			}
-
-			parent::entryDataCleanup($entry_id);
-
-			return true;
-		}
-
-		public static function getMetaInfo($file, $type){
-			$meta = array();
-
-			if(!file_exists($file) || !is_readable($file)) return $meta;
-
-			$meta['creation'] = DateTimeObj::get('c', filemtime($file));
-
-			if(General::in_iarray($type, fieldUpload::$imageMimeTypes) && $array = @getimagesize($file)){
-				$meta['width'] = $array[0];
-				$meta['height'] = $array[1];
-			}
-
-			return $meta;
-		}
-		
 		/*-------------------------------------------------------------------------
 			Settings:
 		-------------------------------------------------------------------------*/
 
-        public function displaySettingsPanel(XMLElement &$wrapper, $errors = null) {
-        	
-        	parent::displaySettingsPanel($wrapper, $errors);
-			
+		public function displaySettingsPanel(XMLElement &$wrapper, $errors = null) {
+
+			parent::displaySettingsPanel($wrapper, $errors);
+
+			// append our own settings
 			$label = new XMLElement('label');
-            $input = Widget::Input("fields[{$this->get('sortorder')}][override]", 'yes', 'checkbox');
-			if( $this->get('override') == 'yes' ) $input->setAttribute('checked', 'checked');
+			$input = Widget::Input("fields[{$this->get('sortorder')}][override]", 'yes', 'checkbox');
+			if( $this->get('override') == 'yes' ) {
+				$input->setAttribute('checked', 'checked');
+			}
 			$label->setValue(__('%s Allow overriding of upload directory in entries', array($input->generate())));
 
 			$wrapper->appendChild($label);
-
-        }
+		}
 
 		/*-------------------------------------------------------------------------
 			Publish:
 		-------------------------------------------------------------------------*/
 
-		public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null){
-		
-			if(!is_dir(DOCROOT . $this->get('destination') . '/')){
-				$flagWithError = __('The destination directory, %s, does not exist.', array('<code>' . $this->get('destination') . '</code>'));
-			}
-			
-			elseif(!$flagWithError && !is_writable(DOCROOT . $this->get('destination') . '/')){
-				$flagWithError = __('Destination folder is not writable.') . ' ' . __('Please check permissions on %s.', array('<code>' . $this->get('destination') . '</code>'));
+		// TODO @nitriques: Find time to push this to the XMLElement class
+		private function getChildrenWithClass(XMLElement &$rootElement, $className, $tagName = NULL) {
+			if ($rootElement == NULL) {
+				return NULL;
 			}
 
-			$label = Widget::Label($this->get('label'));
-			$label->setAttribute('class', 'file');
+			// contains the right css class and the right node name (if any)
+			// TODO: Use word bondaries instead of strpos
+			if (
+				(!$className || strpos($rootElement->getAttribute('class'), $className) > -1)
+				&&
+				(!$tagName || $rootElement->getName() == $tagName)
+			) {
+				return $rootElement;
+			}
 
-			// Destination Folder
+			// recursive search in child elements
+			foreach ($rootElement->getChildren() as $key => $child) {
+
+				$res = $this->getChildrenWithClass($child, $className, $tagName);
+
+				if ($res != NULL) {
+					return $res;
+				}
+			}
+
+			return NULL;
+		}
+
+		// from: http://stackoverflow.com/questions/834303/php-startswith-and-endswith-functions
+		private static function endsWith($haystack,$needle,$case=true) {
+			$expectedPosition = strlen($haystack) - strlen($needle);
+
+			if($case) {
+				return strrpos($haystack, $needle, 0) === $expectedPosition;
+			}
+			return strripos($haystack, $needle, 0) === $expectedPosition;
+		}
+
+		// Utility function to build the select box's options
+		private function getSubDirectoriesOptions($data) {
+			// Ignored Folder
 			$ignore = array(
 				'/workspace/events',
 				'/workspace/data-sources',
@@ -105,353 +90,209 @@
 				'/workspace/pages',
 				'/workspace/utilities'
 			);
-			
-			//Select only the Child directories of the Section Editor Chosen Directory
-			$overridedirectories = str_replace('/workspace','',$this->get('destination'));
-			
-			$directories = General::listDirStructure(WORKSPACE . $overridedirectories , null, true, DOCROOT, $ignore);
-			
-			$options = array();
-			$options[] = array($this->get('destination'), false, $this->get('destination'));
-			
+
+			// Destination Folder
+			$destination = $this->get('destination');
+
+			// Trim the destination
+			$overridedirectories = str_replace('/workspace', '', $destination);
+
+			// Select only the Child directories of the Section Editor Chosen Directory
+			$directories = General::listDirStructure(WORKSPACE . $overridedirectories, null, true, DOCROOT, $ignore);
+
+			// Options tags
+			$options = array(
+				// Include the destination itself
+				array(
+					$destination, // value
+					false,        // selected
+					'/'           // text
+				)
+			);
+
+			// If we have found some sub-directories of the destination
 			if(!empty($directories) && is_array($directories)){
 				foreach($directories as $d) {
+					// remove all (begin and end) and assure
+					// we have the proper pattern
 					$d = '/' . trim($d, '/');
-					if(!in_array($d, $ignore)) $options[] = array($d, ($this->get('destination') == $d), $d);
-				}
-			}
+					if(!in_array($d, $ignore)) {
 
-			if($this->get('required') != 'yes') $label->appendChild(new XMLElement('i', __('Optional')));
-			
-			//Start of input/upload field code
-			$span = new XMLElement('span', NULL, array('class' => 'enhanced_frame enhanced_upload'));
-			//Render the upload field or reflect the uploaded file stored in DB.
-			if($data['file']) $span->appendChild(Widget::Anchor('/workspace' . $data['file'], URL . '/workspace' . $data['file'], null, 'enhanced_file'));			
-			
-			$span->appendChild(Widget::Input('fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix, $data['file'], ($data['file'] ? 'hidden' : 'file'), array('class'=>'enhanced_file')));
-			
-			if($this->get('override') == 'yes'){
-				
-				//$override = new XMLELement('span', NULL, array('class' => 'enhanced_upload'));
-				//Allow selection of a child folder to upload the image
-				$choosefolder = Widget::Select('fields[enhanced_upload_field]'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix.'[directory]', $options, array('class' => 'enhanced_upload_select_'.(!$data['file'] ? 'show':'hidden')));
-				//$choosefolder = Widget::Select('directory', $options, array('class' => 'enhanced_upload_select_'.(!$data['file'] ? 'show':'hidden')));
-				$span->appendChild($choosefolder);
-				//$label->appendChild($override);
-			
-			}
-			
-			$label->appendChild($span);
+						$isSelected = false;
 
-			if($flagWithError != NULL) $wrapper->appendChild(Widget::Error($label, $flagWithError));
-			else $wrapper->appendChild($label);
-		
-		}
+						// if we have data
+						if (!empty($data) && isset($data['file'])) {
+							//var_dump($data);die;
+							$path = dirname($data['file']);
+							$isSelected = self::endsWith($d, $path);
+						}
 
-    	public function commit(){
-    		
-		if(!parent::commit()) return false;
-		
-			$id = $this->get('id');
-
-			if($id === false) return false;
-
-			$fields = array();
-
-			$fields['destination'] = $this->get('destination');
-			$fields['validator'] = ($fields['validator'] == 'custom' ? NULL : $this->get('validator'));
-			$fields['override'] = $this->get('override');
-
-			return FieldManager::saveSettings($id, $fields);
-		}
-	
-		public function checkFields(array &$errors, $checkForDuplicates = true){
-			if(!is_dir(DOCROOT . $this->get('destination') . '/')){
-				$errors['destination'] = __('The destination directory, %s, does not exist.', array('<code>' . $this->get('destination') . '</code>'));
-			}
-
-			elseif(!is_writable(DOCROOT . $this->get('destination') . '/')){
-				$errors['destination'] = __('The destination directory is not writable.') . ' ' . __('Please check permissions on %s.', array('<code>' . $this->get('destination') . '</code>'));
-			}
-
-			parent::checkFields($errors, $checkForDuplicates);
-		}
-	
-	
-		public function prepareTableValue($data, XMLElement $link=NULL, $entry_id = null){
-			
-			//var_dump($data);
-			
-			if(!$file = $data['file']){
-				if($link) return parent::prepareTableValue(null, $link);
-				else return parent::prepareTableValue(null);
-			}
-
-			if($link){
-				$link->setValue(basename($file));
-				return $link->generate();
-			}
-
-			else{
-				$link = Widget::Anchor(basename($file), URL . '/workspace' . $file);
-				return $link->generate();
-			}
-			
-		}
-			
-		public function checkPostFieldData($data, &$message, $entry_id=NULL){
-			/**
-			 * For information about PHPs upload error constants see:
-			 * @link http://php.net/manual/en/features.file-upload.errors.php
-			 */
-			$message = null;
-			
-			if (
-				empty($data)
-				|| (
-					is_array($data)
-					&& isset($data['error'])
-					&& $data['error'] == UPLOAD_ERR_NO_FILE
-				)
-			) {
-				if ($this->get('required') == 'yes') {
-					$message = __('‘%s’ is a required field.', array($this->get('label')));
-
-					return self::__MISSING_FIELDS__;
-				}
-
-				return self::__OK__;
-			}
-
-			// Its not an array, so just retain the current data and return
-			if (is_array($data) === false) {
-				/**
-				 * Ensure the file exists in the `WORKSPACE` directory
-				 * @link http://symphony-cms.com/discuss/issues/view/610/
-				 */
-				$file = WORKSPACE . preg_replace(array('%/+%', '%(^|/)\.\./%'), '/', $data);
-
-				//var_dump($data['file']);
-				
-				if (file_exists($file) === false || !is_readable($file)) {
-					$message = __('The file uploaded is no longer available. Please check that it exists, and is readable.');
-
-					return self::__INVALID_FIELDS__;
-				}
-
-				// Ensure that the file still matches the validator and hasn't
-				// changed since it was uploaded.
-				if ($this->get('validator') != null) {
-					$rule = $this->get('validator');
-
-					if (General::validateString($file, $rule) === false) {
-						$message = __('File chosen in ‘%s’ does not match allowable file types for that field.', array(
-							$this->get('label')
-						));
-
-						return self::__INVALID_FIELDS__;
+						$options[] = array(
+							$d,
+							$isSelected,
+							str_replace($destination, '', $d)
+						);
 					}
 				}
-
-				return self::__OK__;
 			}
-
-			if (is_dir(DOCROOT . $this->get('destination') . '/') === false) {
-				$message = __('The destination directory, %s, does not exist.', array(
-					'<code>' . $this->get('destination') . '</code>'
-				));
-
-				return self::__ERROR__;
-			}
-
-			else if (is_writable(DOCROOT . $this->get('destination') . '/') === false) {
-				$message = __('Destination folder is not writable.')
-					. ' '
-					. __('Please check permissions on %s.', array(
-						'<code>' . $this->get('destination') . '</code>'
-					));
-
-				return self::__ERROR__;
-			}
-
-			if ($data['error'] != UPLOAD_ERR_NO_FILE && $data['error'] != UPLOAD_ERR_OK) {
-				switch ($data['error']) {
-					case UPLOAD_ERR_INI_SIZE:
-						$message = __('File chosen in ‘%1$s’ exceeds the maximum allowed upload size of %2$s specified by your host.', array($this->get('label'), (is_numeric(ini_get('upload_max_filesize')) ? General::formatFilesize(ini_get('upload_max_filesize')) : ini_get('upload_max_filesize'))));
-						break;
-
-					case UPLOAD_ERR_FORM_SIZE:
-						$message = __('File chosen in ‘%1$s’ exceeds the maximum allowed upload size of %2$s, specified by Symphony.', array($this->get('label'), General::formatFilesize($_POST['MAX_FILE_SIZE'])));
-						break;
-
-					case UPLOAD_ERR_PARTIAL:
-					case UPLOAD_ERR_NO_TMP_DIR:
-						$message = __('File chosen in ‘%s’ was only partially uploaded due to an error.', array($this->get('label')));
-						break;
-
-					case UPLOAD_ERR_CANT_WRITE:
-						$message = __('Uploading ‘%s’ failed. Could not write temporary file to disk.', array($this->get('label')));
-						break;
-
-					case UPLOAD_ERR_EXTENSION:
-						$message = __('Uploading ‘%s’ failed. File upload stopped by extension.', array($this->get('label')));
-						break;
-				}
-
-				return self::__ERROR_CUSTOM__;
-			}
-
-			// Sanitize the filename
-			$data['name'] = Lang::createFilename($data['name']);
-
-			if ($this->get('validator') != null) {
-				$rule = $this->get('validator');
-
-				if (!General::validateString($data['name'], $rule)) {
-					$message = __('File chosen in ‘%s’ does not match allowable file types for that field.', array($this->get('label')));
-
-					return self::__INVALID_FIELDS__;
-				}
-			}
-
-			return self::__OK__;
+			return $options;
 		}
-		
-		
-		public function processRawFieldData($data, &$status, &$message=null, $simulate=false, $entry_id=NULL){
+
+		public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null){
+
+			// BEWARE
+			// LINE 186 in field.upload.php has a bug in 2.3.1
+			// it need to get rid of the extra === false a the end of the line
+			// https://github.com/symphonycms/symphony-2/blob/master/symphony/lib/toolkit/fields/field.upload.php#L186
+			// you need to get it fixed because if not, errors
+			// messages from checkPostFieldData will get ovewritten
+
+			// Let the upload field do it's job
+			parent::displayPublishPanel($wrapper, $data, $flagWithError, $fieldnamePrefix, $fieldnamePostfix, $entry_id);
+
+			// the override setting is set
+			if ($this->get('override') == 'yes') {
+
+				// recursive find our span.frame
+				$span = $this->getChildrenWithClass($wrapper, 'frame');
+
+				// if we found it
+				if ($span != NULL) {
+
+					// get subdirectories
+					$options = $this->getSubDirectoriesOptions($data);
+
+					// allow selection of a child folder to upload the image
+					$choosefolder = Widget::Select(
+						'fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix.'[directory]',
+						$options
+					);
+					// append it to the frame
+					$span->appendChild($choosefolder);
+				}
+
+				// recursive find the input
+				$input = $this->getChildrenWithClass($span, null, 'input');
+
+				// if we found it
+				if ($input != NULL) {
+					// change its name
+					// N.B. this is really important because of the
+					// way Symphony parses the $_POST array. You can't have
+					// both a literal value AND sub-values with the same key.
+					// Keys are either literals or containers. The upload field
+					// uses the fields[label] for it's value. We now have two values,
+					// file and directory, so we need to update the html accordingly.
+					$input->setAttribute('name', $input->getAttribute('name') . '[file]');
+				}
+			}
+		}
+
+		public function commit() {
+
+			// commit the parent's data
+			if(!parent::commit()) return false;
+
+			// get the commited data
+			$fields = array();
+
+			// set our own
+			$fields['destination'] = rtrim(trim($this->get('destination')), '/');
+			$fields['override'] = $this->get('override');
+			// make sure we do not loose anything
+			// the field managers wants them all, since it `delete`s
+			// and `insert` instead of `update`
+			// TODO: Use $this->get() and remove the base fields (label, handle, ...) ?
+			$fields['validator'] = $this->get('validator');
+
+			// save
+			return FieldManager::saveSettings($this->get('id'), $fields);
+		}
+
+		private function revertData(&$data) {
+			// check to see if there is really a file
+			if (count($data) == 1 && isset($data['file'])) {
+				// revert to what the parent is expecting
+				$data = $data['file'];
+			}
+			return $data;
+		}
+
+		public function checkPostFieldData($data, &$message, $entry_id=NULL) {
+			// the parent destination
+			$destination = $this->get('destination');
+			// our custom directory
+			$dir = $data['directory'];
+			// validation status - assume it's ok
 			$status = self::__OK__;
-			
-			//fixes bug where files are deleted, but their database entries are not.
-			if($data === NULL) {
-				return array(
-					'file' => NULL,
-					'mimetype' => NULL,
-					'size' => NULL,
-					'meta' => NULL
-				);
+
+			// Remove our data to make the parent validation works
+			// Since we receive $data by copy (not reference) we won't
+			// affect any other methods.
+			unset($data['directory']);
+
+			// revert to what the parent is expecting
+			$data = $this->revertData($data);
+
+			// validate our part
+			if (strlen(trim($dir)) == 0) {
+				$message = __('‘%s’ needs to have a directory setted.', array($this->get('label')));
+
+				$status = self::__MISSING_FIELDS__;
 			}
-			
-			// It's not an array, so just retain the current data and return
-			if(!is_array($data)) {
-				// Ensure the file exists in the `WORKSPACE` directory
-				// @link http://symphony-cms.com/discuss/issues/view/610/
-				$file = WORKSPACE . preg_replace(array('%/+%', '%(^|/)\.\./%'), '/', $data);
+			else {
+				// make the parent think this is the good directory
+				$this->set('destination', $dir);
 
-				$result = array(
-					'file' => $data,
-					'mimetype' => NULL,
-					'size' => NULL,
-					'meta' => NULL
-				);
+				// let the parent do its job
+				$status = parent::checkPostFieldData($data, $message, $entry_id);
 
-				// Grab the existing entry data to preserve the MIME type and size information
-				if(isset($entry_id) && !is_null($entry_id)) {
-					$row = Symphony::Database()->fetchRow(0, sprintf(
-						"SELECT `file`, `mimetype`, `size`, `meta` FROM `tbl_entries_data_%d` WHERE `entry_id` = %d",
-						$this->get('id'),
-						$entry_id
-					));
-
-					if(!empty($row)) $result = $row;
-				}
-
-				if(!file_exists($file) || !is_readable($file)) {
-					$message = __('The file uploaded is no longer available. Please check that it exists, and is readable.');
-					$status = self::__INVALID_FIELDS__;
-					return $result;
-				}
-				else {
-					if(empty($result['mimetype'])) $result['mimetype'] = (function_exists('mime_content_type') ? mime_content_type($file) : 'application/octet-stream');
-					if(empty($result['size'])) $result['size'] = filesize($file);
-					if(empty($result['meta'])) $result['meta'] = serialize(self::getMetaInfo($file, $result['mimetype']));
-				}
-				
-				return $result;
+				// reset to old value in order to prevent a bug
+				// in the display method
+				$this->set('destination', $destination);
 			}
 
-			if($simulate && is_null($entry_id)) return $data;
-			
-			
-			//My special Select box alteration :P
-			
-			//var_dump($_POST['fields']['enhanced_upload_field'][$this->get('element_name')]['directory'],$_POST);die;
-			//var_dump($_POST);
-			// Upload the new file
-			$override_path = $this->get('override') == 'yes' ? $_POST['fields']['enhanced_upload_field'][$this->get('element_name')]['directory'] : trim($this->get('destination'));
-			$abs_path = DOCROOT . $override_path . '/';
-			$rel_path = str_replace('/workspace', '', $override_path);
-			$existing_file = NULL;
-			
-			if(!is_null($entry_id)) {
-				$row = Symphony::Database()->fetchRow(0, sprintf(
-					"SELECT * FROM `tbl_entries_data_%s` WHERE `entry_id` = %d LIMIT 1",
-					$this->get('id'),
-					$entry_id
-				));
-
-				$existing_file = '/' . trim($row['file'], '/');
-
-				// File was removed
-				if($data['error'] == UPLOAD_ERR_NO_FILE && !is_null($existing_file) && is_file(WORKSPACE . $existing_file)) {
-					General::deleteFile(WORKSPACE . $existing_file);
-				}
-			}
-
-			if($data['error'] == UPLOAD_ERR_NO_FILE || $data['error'] != UPLOAD_ERR_OK) {
-				return false;
-			}
-
-			// If a file already exists, then rename the file being uploaded by
-			// adding `_1` to the filename. If `_1` already exists, the logic
-			// will keep adding 1 until a filename is available (#672)
-			$new_file = $abs_path . '/' . $data['name'];
-			if(file_exists($new_file)) {
-				$i = 1;
-				$extension = General::getExtension($data['name']);
-				$renamed_file = $new_file;
-
-				do {
-					$renamed_file = General::left($new_file, -strlen($extension) - 1) . '_' . $i . '.' . $extension;
-					$i++;
-				} while (file_exists($renamed_file));
-
-				// Extract the name filename from `$renamed_file`.
-				$data['name'] = str_replace($abs_path . '/', '', $renamed_file);
-			}
-
-			// Sanitize the filename
-			$data['name'] = Lang::createFilename($data['name']);
-
-			// Actually upload the file, moving it from PHP's temporary store to the desired destination
-			if(!General::uploadFile($abs_path, $data['name'], $data['tmp_name'], Symphony::Configuration()->get('write_mode', 'file'))) {
-				$message = __('There was an error while trying to upload the file %1$s to the target directory %2$s.', array('<code>' . $data['name'] . '</code>', '<code>workspace/'.ltrim($rel_path, '/') . '</code>'));
-				$status = self::__ERROR_CUSTOM__;
-				return false;
-			}
-
-			$file = rtrim($rel_path, '/') . '/' . trim($data['name'], '/');
-
-			// File has been replaced
-			if(!is_null($existing_file) && (strtolower($existing_file) != strtolower($file)) && is_file(WORKSPACE . $existing_file)) {
-				General::deleteFile(WORKSPACE . $existing_file);
-			}
-
-			// If browser doesn't send MIME type (e.g. .flv in Safari)
-			if (strlen(trim($data['type'])) == 0) {
-				$data['type'] = (function_exists('mime_content_type') ? mime_content_type($file) : 'application/octet-stream');
-			}
-
-			//var_dump($_POST);
-			
-			return array(
-				'file' => $file,
-				'size' => $data['size'],
-				'mimetype' => $data['type'],
-				'meta' => serialize(self::getMetaInfo(WORKSPACE . $file, $data['type']))
-			);
-			
-			
+			return $status;
 		}
-	
-		
+
+		public function processRawFieldData($data, &$status, &$message=null, $simulate=false, $entry_id=NULL) {
+			// execute logic only once est resuse
+			// although this is pretty clear we will now
+			// always have an array!
+			$dataIsArray = is_array($data);
+			// get our data
+			$dir = $dataIsArray ? $data['directory'] : '';
+			// check if we have dir
+			$hasDir = strlen(trim($dir)) > 0;
+			// remove our data from the array
+			if ($dataIsArray) {
+				unset($data['directory']);
+			}
+
+			// revert to what the parent is expecting
+			$data = $this->revertData($data);
+
+			$status = self::__OK__;
+			$destination = $this->get('destination');
+
+			// Change the destination if we have to
+			if ($this->get('override') == 'yes' && $hasDir) {
+				// make the parent think this is the good directory
+				$this->set('destination', $dir);
+			}
+
+			// Upload the new file
+			// let the parent to its job
+			$values = parent::processRawFieldData($data, $status, $message, $simulate, $entry_id);
+
+			// reset parent value if we have to
+			if ($this->get('override') == 'yes' && $hasDir) {
+				$this->set('destination', $destination);
+			}
+
+			return $values;
+		}
+
+		// That's it ! Everything else is handled by the parent!
+		// Happy coding!
 }

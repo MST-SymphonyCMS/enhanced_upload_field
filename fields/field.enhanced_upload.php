@@ -147,11 +147,6 @@
 			// you need to get it fixed because if not, errors
 			// messages from checkPostFieldData will get ovewritten
 
-			/*if (!!$flagWithError){
-				var_dump(is_writable(DOCROOT . $this->get('destination')));
-				var_dump($flagWithError);die;
-			}*/
-
 			// Let the upload field do it's job
 			parent::displayPublishPanel($wrapper, $data, $flagWithError, $fieldnamePrefix, $fieldnamePostfix, $entry_id);
 
@@ -176,11 +171,11 @@
 					$span->appendChild($choosefolder);
 				}
 
-				// recursive find the hidden input
-				$hidden = $this->getChildrenWithClass($span, null, 'input');
+				// recursive find the input
+				$input = $this->getChildrenWithClass($span, null, 'input');
 
 				// if we found it
-				if ($hidden != NULL) {
+				if ($input != NULL) {
 					// change its name
 					// N.B. this is really important because of the
 					// way Symphony parses the $_POST array. You can't have
@@ -188,7 +183,7 @@
 					// Keys are either literals or containers. The upload field
 					// uses the fields[label] for it's value. We now have two values,
 					// file and directory, so we need to update the html accordingly.
-					$hidden->setAttribute('name', $hidden->getAttribute('name') . '[file]');
+					$input->setAttribute('name', $input->getAttribute('name') . '[file]');
 				}
 			}
 		}
@@ -249,17 +244,13 @@
 				// make the parent think this is the good directory
 				$this->set('destination', $dir);
 
-				//var_dump($data);var_dump($entry_id);
-
 				// let the parent do its job
 				$status = parent::checkPostFieldData($data, $message, $entry_id);
 
 				// reset to old value in order to prevent a bug
-				// in the display methods
+				// in the display method
 				$this->set('destination', $destination);
 			}
-
-			//var_dump($status);var_dump($message);//die;
 
 			return $status;
 		}
@@ -281,24 +272,23 @@
 			// revert to what the parent is expecting
 			$data = $this->revertData($data);
 
-			//var_dump($data);die;
-
 			$status = self::__OK__;
 			$destination = $this->get('destination');
 
-			// Upload the new file
+			// Change the destination if we have to
 			if ($this->get('override') == 'yes' && $hasDir) {
 				// make the parent think this is the good directory
 				$this->set('destination', $dir);
 			}
 
+			// Upload the new file
 			// let the parent to its job
 			$values = parent::processRawFieldData($data, $status, $message, $simulate, $entry_id);
 
-			// reset parent value
-			$this->set('destination', $destination);
-
-			//var_dump($values);die;
+			// reset parent value if we have to
+			if ($this->get('override') == 'yes' && $hasDir) {
+				$this->set('destination', $destination);
+			}
 
 			return $values;
 		}

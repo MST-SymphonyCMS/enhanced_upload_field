@@ -115,7 +115,7 @@
 				foreach($directories as $d) {
 					// remove all (begin and end) and assure
 					// we have the proper pattern
-					$d = '/' . trim($d, '/') . '/';
+					$d = '/' . trim($d, '/');
 					if(!in_array($d, $ignore)) {
 
 						$isSelected = false;

@@ -210,14 +210,25 @@
 		}
 
 		private function revertData(&$data) {
+			$count = is_array($data) ? count($data) : 0;
 			// check to see if there is really a file
-			if (count($data) == 1 && isset($data['file'])) {
+			if ($count == 1 && isset($data['file'])) {
 				// revert to what the parent is expecting
 				$data = $data['file'];
+			} else if ($count == 0) {
+				$data = null;
 			}
 			return $data;
 		}
 
+		/**
+		 *
+		 * Validates input
+		 * Called before <code>processRawFieldData</code>
+		 * @param $data
+		 * @param $message
+		 * @param $entry_id
+		 */
 		public function checkPostFieldData($data, &$message, $entry_id=NULL) {
 			// the parent destination
 			$destination = $this->get('destination');
@@ -255,6 +266,19 @@
 			return $status;
 		}
 
+		/**
+		 *
+		 * Process data before saving into databse.
+		 * Also,
+		 * this saves the uploaded file in the file system.
+		 *
+		 * @param array $data
+		 * @param int $status
+		 * @param boolean $simulate
+		 * @param int $entry_id
+		 *
+		 * @return Array - data to be inserted into DB
+		 */
 		public function processRawFieldData($data, &$status, &$message=null, $simulate=false, $entry_id=NULL) {
 			// execute logic only once est resuse
 			// although this is pretty clear we will now
@@ -280,6 +304,8 @@
 				// make the parent think this is the good directory
 				$this->set('destination', $dir);
 			}
+
+			var_dump($data);die;
 
 			// Upload the new file
 			// let the parent to its job

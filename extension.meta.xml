@@ -20,7 +20,7 @@
 		<release version="0.3" date="2013-01-14" min="2.3.2">
 			- Empty array checking functions added. This release will only work with 2.3.2 due to a bug found in Symphony core. Fix is in this pull request:  https://github.com/symphonycms/symphony-2/pull/1600
 		</release>
-		<release version="0.2" date="2013-01-06" min="2.3">
+		<release version="0.2" date="2013-01-06" min="2.3.2">
 			- Refactored using the base FieldUpload class
 		</release>
 		<release version="0.1" date="2012-11-10" min="2.3">

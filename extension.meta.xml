@@ -8,10 +8,12 @@
 	</types>
 	<authors>
 		<author>
-			<name github="andrewminton" symphony="moonoo2" twitter="andrewminton">Andrew Minton</name>	
+			<name github="andrewminton" symphony="moonoo2" twitter="andrewminton">Andrew Minton</name>
+			<website>http://andrewminton.co.uk</website>
 		</author>
 		<author>
 			<name github="DeuxHuitHuit" symphony="nitriques" twitter="nitriques">Deux Huit Huit</name>
+			<website>http://www.deuxhuithuit.com</website>
 		</author>
 	</authors>
 	<releases>

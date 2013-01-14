@@ -122,7 +122,6 @@
 
 						// if we have data
 						if (!empty($data) && isset($data['file'])) {
-							//var_dump($data);die;
 							$path = dirname($data['file']);
 							$isSelected = self::endsWith($d, $path);
 						}
@@ -214,11 +213,30 @@
 			// check to see if there is really a file
 			if ($count == 1 && isset($data['file'])) {
 				// revert to what the parent is expecting
+				// the original 'file' array or string
 				$data = $data['file'];
-			} else if ($count == 0) {
+			} else if ($count <= 1) {
 				$data = null;
 			}
 			return $data;
+		}
+
+		/**
+		 * Check to see if the 'override' option is
+		 * set to 'yes'.
+		 * @return boolean
+		 */
+		public function isDirectoryOverriable() {
+			return $this->get('override') == 'yes';
+		}
+
+		/**
+		 * Returns true if the $dir value is valid.
+		 * @param string $dir
+		 * @return boolean
+		 */
+		private static function hasDir($dir) {
+			return strlen(trim($dir)) > 0;
 		}
 
 		/**
@@ -246,7 +264,7 @@
 			$data = $this->revertData($data);
 
 			// validate our part
-			if (strlen(trim($dir)) == 0) {
+			if ($this->isDirectoryOverriable() && !self::hasDir($dir)) {
 				$message = __('‘%s’ needs to have a directory setted.', array($this->get('label')));
 
 				$status = self::__MISSING_FIELDS__;
@@ -287,7 +305,7 @@
 			// get our data
 			$dir = $dataIsArray ? $data['directory'] : '';
 			// check if we have dir
-			$hasDir = strlen(trim($dir)) > 0;
+			$hasDir = self::hasDir($dir);
 			// remove our data from the array
 			if ($dataIsArray) {
 				unset($data['directory']);
@@ -300,12 +318,10 @@
 			$destination = $this->get('destination');
 
 			// Change the destination if we have to
-			if ($this->get('override') == 'yes' && $hasDir) {
+			if ($this->isDirectoryOverriable() && $hasDir) {
 				// make the parent think this is the good directory
 				$this->set('destination', $dir);
 			}
-
-			var_dump($data);die;
 
 			// Upload the new file
 			// let the parent to its job

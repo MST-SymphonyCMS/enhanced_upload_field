@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<extension id="enhanced_upload_field" status="experimental" xmlns="http://symphony-cms.com/schemas/extension/1.0">
+<extension id="enhanced_upload_field" status="released" xmlns="http://symphony-cms.com/schemas/extension/1.0">
 	<name>Enhanced Upload Field</name>
 	<description>Allowing override of upload folder from section entries</description>
 	<repo type="github">https://github.com/andrewminton/enhanced_upload_field</repo>
@@ -17,6 +17,9 @@
 		</author>
 	</authors>
 	<releases>
+		<release version="0.3" date="2013-01-14" min="2.3.2">
+			- Empty array checking functions added. This release will only work with 2.3.2 due to a bug found in Symphony core. Fix is in this pull request:  https://github.com/symphonycms/symphony-2/pull/1600
+		</release>
 		<release version="0.2" date="2013-01-06" min="2.3">
 			- Refactored using the base FieldUpload class
 		</release>

@@ -223,6 +223,24 @@
 		}
 
 		/**
+		 * Check to see if the 'override' option is
+		 * set to 'yes'.
+		 * @return boolean
+		 */
+		public function isDirectoryOverriable() {
+			return $this->get('override') == 'yes';
+		}
+
+		/**
+		 * Returns true if the $dir value is valid.
+		 * @param string $dir
+		 * @return boolean
+		 */
+		private static function hasDir($dir) {
+			return strlen(trim($dir)) > 0;
+		}
+
+		/**
 		 *
 		 * Validates input
 		 * Called before <code>processRawFieldData</code>
@@ -249,7 +267,7 @@
 			$data = $this->revertData($data);
 
 			// validate our part
-			if (strlen(trim($dir)) == 0) {
+			if ($this->isDirectoryOverriable() && !self::hasDir($dir)) {
 				$message = __('‘%s’ needs to have a directory setted.', array($this->get('label')));
 
 				$status = self::__MISSING_FIELDS__;
@@ -299,7 +317,7 @@
 			// get our data
 			$dir = $dataIsArray ? $data['directory'] : '';
 			// check if we have dir
-			$hasDir = strlen(trim($dir)) > 0;
+			$hasDir = self::hasDir($dir);
 			// remove our data from the array
 			if ($dataIsArray) {
 				unset($data['directory']);
@@ -312,7 +330,7 @@
 			$destination = $this->get('destination');
 
 			// Change the destination if we have to
-			if ($this->get('override') == 'yes' && $hasDir) {
+			if ($this->isDirectoryOverriable() && $hasDir) {
 				// make the parent think this is the good directory
 				$this->set('destination', $dir);
 			}

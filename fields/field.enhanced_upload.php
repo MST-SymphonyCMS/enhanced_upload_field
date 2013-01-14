@@ -122,7 +122,6 @@
 
 						// if we have data
 						if (!empty($data) && isset($data['file'])) {
-							//var_dump($data);die;
 							$path = dirname($data['file']);
 							$isSelected = self::endsWith($d, $path);
 						}
@@ -249,8 +248,6 @@
 		 * @param $entry_id
 		 */
 		public function checkPostFieldData($data, &$message, $entry_id=NULL) {
-			echo "// checkPostFieldData before \n";
-			var_dump($data);
 			// the parent destination
 			$destination = $this->get('destination');
 			// our custom directory
@@ -284,9 +281,6 @@
 				$this->set('destination', $destination);
 			}
 
-			echo "// checkPostFieldData after \n";
-			if (isset($_FILES['fields'])) var_dump(General::processFilePostData($_FILES['fields']));
-			var_dump($data);
 			return $status;
 		}
 
@@ -304,12 +298,6 @@
 		 * @return Array - data to be inserted into DB
 		 */
 		public function processRawFieldData($data, &$status, &$message=null, $simulate=false, $entry_id=NULL) {
-
-			echo "// processRawFieldData before \n";
-			$bt = debug_backtrace();
-			var_dump($bt[1]['file']);
-			var_dump($bt[1]['line']);
-			var_dump($data);
 			// execute logic only once est resuse
 			// although this is pretty clear we will now
 			// always have an array!
@@ -335,14 +323,9 @@
 				$this->set('destination', $dir);
 			}
 
-			echo "// processRawFieldData after \n";
-			var_dump($simulate);var_dump($data);
-
 			// Upload the new file
 			// let the parent to its job
 			$values = parent::processRawFieldData($data, $status, $message, $simulate, $entry_id);
-
-			var_dump($message);
 
 			// reset parent value if we have to
 			if ($this->get('override') == 'yes' && $hasDir) {

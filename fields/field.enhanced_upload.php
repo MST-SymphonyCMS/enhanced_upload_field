@@ -136,7 +136,72 @@
 			}
 			return $options;
 		}
+		
+		// Utility function to build the Swap select box's options
+		private function getSubDirectoriesFilesOptions($data) {
+			// Ignored Folder
+			$ignore = array(
+				'/workspace/events',
+				'/workspace/data-sources',
+				'/workspace/text-formatters',
+				'/workspace/pages',
+				'/workspace/utilities'
+			);
 
+			// Destination Folder
+			$destination = $this->get('destination');
+
+			// Trim the destination
+			$overridedirectories = str_replace('/workspace', '', $destination);
+			
+			// Select only the Child directories of the Section Editor Chosen Directory
+			$files = General::listStructure(WORKSPACE . $overridedirectories, $filters, true,'asc', DOCROOT, $ignore, true);
+			
+			// Options tags
+			//$options = array(
+				// Include the destination itself
+			//	array(
+			//		$destination, // value
+			//		false,        // selected
+			//		'/'           // text
+			//	)
+			//);
+
+			// If we have found some sub-directories of the destination
+			if(!empty($files) && is_array($files)){
+				foreach($files as $f) {
+					// remove all (begin and end) and assure
+					// we have the proper pattern
+					//var_dump($d);
+					//$d = '/' . trim($d, '/');
+					
+					//$f = $f['filelist'];
+					//var_dump($f);
+					
+					if(!in_array($f, $ignore)) {
+
+						$isSelected = false;
+
+						// if we have data
+						//var_dump($f);
+						if (!empty($f) && isset($f)) {
+							$file = $f;
+							//var_dump($file);
+							//$isSelected = self::endsWith($f, $path);
+						}
+
+						$options[] = array(
+							$f,
+							$isSelected,
+							$f//str_replace($destination, '', $f)
+							
+						);
+					}
+				}
+			}
+			return $options;
+		}
+		
 		public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null){
 
 			// BEWARE
@@ -148,7 +213,10 @@
 
 			// Let the upload field do it's job
 			parent::displayPublishPanel($wrapper, $data, $flagWithError, $fieldnamePrefix, $fieldnamePostfix, $entry_id);
-
+			
+			$filetree = new XMLElement('div');
+			$filetree->setAttribute('id', 'filetree');
+			
 			// the override setting is set
 			if ($this->get('override') == 'yes') {
 
@@ -160,16 +228,29 @@
 
 					// get subdirectories
 					$options = $this->getSubDirectoriesOptions($data);
+					
+					//get subdirectory files
+					$swap = $this->getSubDirectoriesFilesOptions($data);
 
 					// allow selection of a child folder to upload the image
 					$choosefolder = Widget::Select(
 						'fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix.'[directory]',
 						$options
 					);
+					
+					//allow selection of file from already uploaded files
+					$choosefile = Widget::Select(
+						'fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix.'[directory]',
+						$swap
+					);
+					
 					// append it to the frame
+					
+					$span->appendChild($choosefile);
 					$span->appendChild($choosefolder);
 				}
-
+				
+				$wrapper->appendChild($filetree);
 				// recursive find the input
 				$input = $this->getChildrenWithClass($span, null, 'input');
 

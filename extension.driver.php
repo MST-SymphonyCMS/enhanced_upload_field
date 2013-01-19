@@ -53,6 +53,9 @@
 					`destination` varchar(255) NOT NULL,
 					`override` enum('yes','no') default 'yes',
 					`validator` varchar(50),
+					`width` varchar(50),
+					`height` varchar(50),
+					`crop` varchar(50),
 					`unique` enum('yes','no') default 'yes',
 					PRIMARY KEY (`id`),
 					KEY `field_id` (`field_id`)

@@ -11,7 +11,6 @@
 		public function __construct(){
 			// use parent class
 			parent::__construct();
-
 			// overwrite the name
 			$this->_name = __('Enhanced File Upload');
 			// set defaults
@@ -35,6 +34,38 @@
 			$label->setValue(__('%s Allow overriding of upload directory in entries', array($input->generate())));
 
 			$wrapper->appendChild($label);
+			
+						$group = new XMLElement('div');
+			$group->setAttribute('class', 'group');
+
+			$label = Widget::Label('Width');
+			$label->appendChild(Widget::Input('fields['.$this->get('sortorder').'][width]', $this->get('width')));
+			if(isset($errors['width'])) $group->appendChild(Widget::wrapFormElementWithError($label, $errors['width']));
+			else $group->appendChild($label);
+			
+			$label = Widget::Label('Height');
+			$label->appendChild(Widget::Input('fields['.$this->get('sortorder').'][height]', $this->get('height')));
+			if(isset($errors['height'])) $group->appendChild(Widget::wrapFormElementWithError($label, $errors['height']));
+			else $group->appendChild($label);
+						
+			$wrapper->appendChild($group);
+			
+			$label = Widget::Label('Crop mode');
+			$selected = $this->get('crop');
+			$options = array(
+				array('1', $selected == '1', 'Top left'),
+				array('2', $selected == '2', 'Top centre'),
+				array('3', $selected == '3', 'Top right'),
+				array('4', $selected == '4', 'Middle left'),
+				array('5', $selected == '5', 'Centre'),
+				array('6', $selected == '6', 'Middle right'),
+				array('7', $selected == '7', 'Bottom left'),
+				array('8', $selected == '8', 'Bottom centre'),
+				array('9', $selected == '9', 'Bottom right')
+			);
+			$label->appendChild(Widget::Select('fields['.$this->get('sortorder').'][crop]', $options));
+			
+			$wrapper->appendChild($label);
 		}
 
 		/*-------------------------------------------------------------------------
@@ -53,7 +84,7 @@
 				(!$className || strpos($rootElement->getAttribute('class'), $className) > -1)
 				&&
 				(!$tagName || $rootElement->getName() == $tagName)
-			) {
+				) {
 				return $rootElement;
 			}
 
@@ -136,7 +167,14 @@
 			}
 			return $options;
 		}
-
+		
+		//Get Hashed File name
+		private function getHashedFilename($filename) {
+			preg_match('/\.[^\.]+$/', $filename, $meta);
+			return md5(time() . $filename) . $meta[0];
+		}
+		
+		
 		public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null){
 
 			// BEWARE
@@ -203,6 +241,9 @@
 			// and `insert` instead of `update`
 			// TODO: Use $this->get() and remove the base fields (label, handle, ...) ?
 			$fields['validator'] = $this->get('validator');
+			$fields['width'] = $this->get('width');
+			$fields['height'] = $this->get('height');
+			$fields['crop'] = $this->get('crop');
 
 			// save
 			return FieldManager::saveSettings($this->get('id'), $fields);
@@ -248,6 +289,9 @@
 		 * @param $entry_id
 		 */
 		public function checkPostFieldData($data, &$message, $entry_id=NULL) {
+		
+			if (is_array($data) and isset($data['name'])) $data['name'] = $this->getHashedFilename($data['name']);
+			
 			// the parent destination
 			$destination = $this->get('destination');
 			// our custom directory
@@ -280,7 +324,7 @@
 				// in the display method
 				$this->set('destination', $destination);
 			}
-
+			
 			return $status;
 		}
 
@@ -298,6 +342,8 @@
 		 * @return Array - data to be inserted into DB
 		 */
 		public function processRawFieldData($data, &$status, &$message=null, $simulate=false, $entry_id=NULL) {
+		
+			if (is_array($data) and isset($data['name'])) $data['name'] = $this->getHashedFilename($data['name']);
 			// execute logic only once est resuse
 			// although this is pretty clear we will now
 			// always have an array!
@@ -335,6 +381,65 @@
 			return $values;
 		}
 
+		//Check the fields for required or not?
+		public function checkFields(&$errors, $checkForDuplicates=true){
+			
+			if(!is_array($errors)) $errors = array();
+			
+			if($this->get('label') == '') $errors['label'] = 'This is a required field.';
+			if($this->get('width') == '') $errors['width'] = 'This is a required field.';
+			if($this->get('height') == '') $errors['height'] = 'This is a required field.';
+
+			if($this->get('element_name') == '') $errors['element_name'] = 'This is a required field.';
+			elseif(!preg_match('/^[A-z]([\w\d-_\.]+)?$/i', $this->get('element_name'))){
+				$errors['element_name'] = 'Invalid element name. Must be valid QName.';
+			}
+			
+			elseif($checkForDuplicates){
+				$sql = "SELECT * FROM `tbl_fields` 
+						WHERE `element_name` = '" . $this->get('element_name') . "'
+						".($this->get('id') ? " AND `id` != '".$this->get('id')."' " : '')." 
+						AND `parent_section` = '". $this->get('parent_section') ."' LIMIT 1";
+
+				if($this->Database->fetchRow(0, $sql)){
+					$errors['element_name'] = 'A field with that element name already exists. Please choose another.';
+				}
+			}
+
+			return (is_array($errors) && !empty($errors) ? self::__ERROR__ : self::__OK__);
+			
+		}
+		
+		function appendFormattedElement(&$wrapper, $data){
+			$item = new XMLElement($this->get('element_name'));
+			var_dump($item);
+			$item->appendChild(new XMLElement('filename', General::sanitize(basename($data['file']))));
+			
+			$item->setAttributeArray(array(
+				'size' => General::formatFilesize(filesize(WORKSPACE . $data['file'])),
+			 	'path' => str_replace(WORKSPACE, NULL, dirname(WORKSPACE . $data['file'])),
+				'type' => $data['mimetype'],
+			));
+						
+			$m = unserialize($data['meta']);
+			
+			if(is_array($m) && !empty($m)){
+				$item->appendChild(new XMLElement('meta', NULL, $m));
+			}
+			
+			$preview_info = Symphony::Database()->fetchRow(0, "SELECT width, height, crop FROM ".Extension_Enhanced_Upload_Field::FIELD_TABLE." WHERE field_id='{$this->_fields['id']}'");
+			var_dump($field_info);
+			$preview = new XMLElement('preview');
+			$preview->setAttributeArray(array(
+				'width' => $preview_info['width'],
+				'height' => $preview_info['height'],
+				'crop' => $preview_info['crop']
+			));
+			$item->appendChild($preview);
+			
+			$wrapper->appendChild($item);
+		}
+		
 		// That's it ! Everything else is handled by the parent!
 		// Happy coding!
 }

@@ -223,6 +223,33 @@
 					$input->setAttribute('name', $input->getAttribute('name') . '[file]');
 				}
 			}
+			
+			$label_text = $this->get('label');
+			if ($data['file']) {
+				$label_text .= " (" . $this->get("width") . "x" . $this->get("height") . " preview, <a href=\"" . URL . "/workspace" . $data['file'] . "\" style=\"float:none;\">view original</a>)";
+			}
+			
+			$label = Widget::Label($label_text);
+			$class = 'file';
+			$label->setAttribute('class', $class);
+			if($this->get('required') != 'yes') $label->appendChild(new XMLElement('i', 'Optional'));
+			
+			$span = new XMLElement('span');
+			if ($data['file']) {
+				$img = new XMLElement("img");
+				$img->setAttribute("alt", "");
+				$img->setAttribute("src", URL . '/image/2/' . $this->get("width") . '/' . $this->get("height") . '/' . $this->get("crop") . '' . $data['file']);
+				$span->appendChild($img);
+			}
+			
+			$span->appendChild(Widget::Input('fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix, $data['file'], ($data['file'] ? 'hidden' : 'file')));
+			
+			$label->appendChild($span);
+			
+			if($flagWithError != NULL) $wrapper->appendChild(Widget::wrapFormElementWithError($label, $flagWithError));
+			else $wrapper->appendChild($label);
+			
+			//return self::appendFormattedElement($wrapper,$data);
 		}
 
 		public function commit() {
@@ -232,7 +259,7 @@
 
 			// get the commited data
 			$fields = array();
-
+			//var_dump($fields);die;
 			// set our own
 			$fields['destination'] = rtrim(trim($this->get('destination')), '/');
 			$fields['override'] = $this->get('override');
@@ -267,7 +294,7 @@
 		 * set to 'yes'.
 		 * @return boolean
 		 */
-		public function isDirectoryOverriadble() {
+		public function isDirectoryOverridable() {
 			return $this->get('override') == 'yes';
 		}
 
@@ -289,8 +316,8 @@
 		 * @param $entry_id
 		 */
 		public function checkPostFieldData($data, &$message, $entry_id=NULL) {
-		
-			if (is_array($data) and isset($data['name'])) $data['name'] = $this->getHashedFilename($data['name']);
+			//var_dump($data);
+			if (is_array($data) and isset($data['name'])) $data['name'] = self::getHashedFilename($data['name']);
 			
 			// the parent destination
 			$destination = $this->get('destination');
@@ -308,7 +335,7 @@
 			$data = $this->revertData($data);
 
 			// validate our part
-			if ($this->isDirectoryOverriable() && !self::hasDir($dir)) {
+			if ($this->isDirectoryOverridable() && !self::hasDir($dir)) {
 				$message = __('‘%s’ needs to have a directory setted.', array($this->get('label')));
 
 				$status = self::__MISSING_FIELDS__;
@@ -343,7 +370,7 @@
 		 */
 		public function processRawFieldData($data, &$status, &$message=null, $simulate=false, $entry_id=NULL) {
 		
-			if (is_array($data) and isset($data['name'])) $data['name'] = $this->getHashedFilename($data['name']);
+			if (is_array($data) and isset($data['name'])) $data['name'] = self::getHashedFilename($data['name']);
 			// execute logic only once est resuse
 			// although this is pretty clear we will now
 			// always have an array!
@@ -428,7 +455,7 @@
 			}
 			
 			$preview_info = Symphony::Database()->fetchRow(0, "SELECT width, height, crop FROM ".Extension_Enhanced_Upload_Field::FIELD_TABLE." WHERE field_id='{$this->_fields['id']}'");
-			var_dump($preview_info);
+			//var_dump($preview_info);
 			$preview = new XMLElement('preview');
 			$preview->setAttributeArray(array(
 				'width' => $preview_info['width'],
@@ -437,7 +464,7 @@
 			));
 			$item->appendChild($preview);
 			
-			var_dump($preview);
+			//var_dump($preview);
 			
 			$wrapper->appendChild($item);
 			//var_dump($wrapper);

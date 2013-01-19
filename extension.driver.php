@@ -52,6 +52,7 @@
 					`field_id` int(11) unsigned NOT NULL,
 					`destination` varchar(255) NOT NULL,
 					`override` enum('yes','no') default 'yes',
+					`hashname` enum('yes','no') default 'no',
 					`validator` varchar(50),
 					`width` varchar(50),
 					`height` varchar(50),

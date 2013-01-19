@@ -24,20 +24,38 @@
 		public function displaySettingsPanel(XMLElement &$wrapper, $errors = null) {
 
 			parent::displaySettingsPanel($wrapper, $errors);
-
+			
+			$div = new XMLElement('div');
+			$div->setAttribute('class','two columns');
+			
 			// append our own settings
 			$label = new XMLElement('label');
+			$label->setAttribute('class','column');
 			$input = Widget::Input("fields[{$this->get('sortorder')}][override]", 'yes', 'checkbox');
 			if( $this->get('override') == 'yes' ) {
 				$input->setAttribute('checked', 'checked');
 			}
-			$label->setValue(__('%s Allow overriding of upload directory in entries', array($input->generate())));
-
-			$wrapper->appendChild($label);
 			
-						$group = new XMLElement('div');
+			$label->setValue(__('%s Allow overriding of upload directory in entries', array($input->generate())));
+			$div->appendChild($label);
+			
+			//Check if user wants to hash the field or not.
+			$hashlabel = new XMLElement('label');
+			$hashlabel->setAttribute('class','column');
+			$hashed = Widget::Input("fields[{$this->get('sortorder')}][hashname]", 'yes', 'checkbox');
+			if( $this->get('hashname') == 'yes' ) {
+				$hashed->setAttribute('checked', 'checked');
+			}
+			
+			$hashlabel->setValue(__('%s Hash the filename using MD5 hashing mechanism', array($hashed->generate())));
+			$div->appendChild($hashlabel);
+			
+			$wrapper->appendChild($div);
+			
+			//Image preview/Crop settings
+			$group = new XMLElement('div');
 			$group->setAttribute('class', 'group');
-
+			
 			$label = Widget::Label('Width');
 			$label->appendChild(Widget::Input('fields['.$this->get('sortorder').'][width]', $this->get('width')));
 			if(isset($errors['width'])) $group->appendChild(Widget::wrapFormElementWithError($label, $errors['width']));
@@ -74,6 +92,7 @@
 
 		// TODO @nitriques: Find time to push this to the XMLElement class
 		private function getChildrenWithClass(XMLElement &$rootElement, $className, $tagName = NULL) {
+			
 			if ($rootElement == NULL) {
 				return NULL;
 			}
@@ -183,10 +202,20 @@
 			// https://github.com/symphonycms/symphony-2/blob/master/symphony/lib/toolkit/fields/field.upload.php#L186
 			// you need to get it fixed because if not, errors
 			// messages from checkPostFieldData will get ovewritten
-
+			
+			var_dump($data);
+			
 			// Let the upload field do it's job
 			parent::displayPublishPanel($wrapper, $data, $flagWithError, $fieldnamePrefix, $fieldnamePostfix, $entry_id);
-
+			
+			//check mime type in order to render preview image
+			if(preg_match('/image/',$data['mimetype'])){
+				
+				//Render an image preview instead of link.
+				var_dump($wrapper);
+				
+			}
+			
 			// the override setting is set
 			if ($this->get('override') == 'yes') {
 
@@ -224,7 +253,7 @@
 				}
 			}
 			
-			$label_text = $this->get('label');
+			/*$label_text = $this->get('label');
 			if ($data['file']) {
 				$label_text .= " (" . $this->get("width") . "x" . $this->get("height") . " preview, <a href=\"" . URL . "/workspace" . $data['file'] . "\" style=\"float:none;\">view original</a>)";
 			}
@@ -247,7 +276,7 @@
 			$label->appendChild($span);
 			
 			if($flagWithError != NULL) $wrapper->appendChild(Widget::wrapFormElementWithError($label, $flagWithError));
-			else $wrapper->appendChild($label);
+			else $wrapper->appendChild($label);*/
 			
 			//return self::appendFormattedElement($wrapper,$data);
 		}
@@ -263,6 +292,7 @@
 			// set our own
 			$fields['destination'] = rtrim(trim($this->get('destination')), '/');
 			$fields['override'] = $this->get('override');
+			$fields['hashname'] = $this->get('hashname');
 			// make sure we do not loose anything
 			// the field managers wants them all, since it `delete`s
 			// and `insert` instead of `update`
@@ -316,8 +346,9 @@
 		 * @param $entry_id
 		 */
 		public function checkPostFieldData($data, &$message, $entry_id=NULL) {
+		
 			//var_dump($data);
-			if (is_array($data) and isset($data['name'])) $data['name'] = self::getHashedFilename($data['name']);
+			//if (is_array($data) and isset($data['name'])) $data['name'] = self::getHashedFilename($data['name']);
 			
 			// the parent destination
 			$destination = $this->get('destination');
@@ -370,13 +401,21 @@
 		 */
 		public function processRawFieldData($data, &$status, &$message=null, $simulate=false, $entry_id=NULL) {
 		
-			if (is_array($data) and isset($data['name'])) $data['name'] = self::getHashedFilename($data['name']);
+			
+			//if (is_array($data) and isset($data['name'])) $data['name'] = self::getHashedFilename($data['name']);
 			// execute logic only once est resuse
 			// although this is pretty clear we will now
 			// always have an array!
 			$dataIsArray = is_array($data);
 			// get our data
+			
+			if($this->get('hashname') =='yes'){
+				$data['file']['name'] = self::getHashedFilename($data['file']['name']);
+			}
+			
 			$dir = $dataIsArray ? $data['directory'] : '';
+			
+			//var_dump($data);
 			// check if we have dir
 			$hasDir = self::hasDir($dir);
 			// remove our data from the array
@@ -397,7 +436,7 @@
 			}
 
 			// Upload the new file
-			// let the parent to its job
+			// let the parent do its job
 			$values = parent::processRawFieldData($data, $status, $message, $simulate, $entry_id);
 
 			// reset parent value if we have to
@@ -409,7 +448,7 @@
 		}
 
 		//Check the fields for required or not?
-		public function checkFields(&$errors, $checkForDuplicates=true){
+		/*public function checkFields(&$errors, $checkForDuplicates=true){
 			
 			if(!is_array($errors)) $errors = array();
 			
@@ -435,9 +474,12 @@
 
 			return (is_array($errors) && !empty($errors) ? self::__ERROR__ : self::__OK__);
 			
-		}
+		}*/
 		
 		function appendFormattedElement(&$wrapper, $data){
+			
+			parent::appendFormattedElement($wrapper, $data);
+			
 			$item = new XMLElement($this->get('element_name'));
 			
 			$item->appendChild(new XMLElement('filename', General::sanitize(basename($data['file']))));

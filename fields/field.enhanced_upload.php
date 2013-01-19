@@ -267,7 +267,7 @@
 		 * set to 'yes'.
 		 * @return boolean
 		 */
-		public function isDirectoryOverriable() {
+		public function isDirectoryOverriadble() {
 			return $this->get('override') == 'yes';
 		}
 
@@ -364,7 +364,7 @@
 			$destination = $this->get('destination');
 
 			// Change the destination if we have to
-			if ($this->isDirectoryOverriable() && $hasDir) {
+			if ($this->isDirectoryOverridable() && $hasDir) {
 				// make the parent think this is the good directory
 				$this->set('destination', $dir);
 			}
@@ -412,7 +412,7 @@
 		
 		function appendFormattedElement(&$wrapper, $data){
 			$item = new XMLElement($this->get('element_name'));
-			var_dump($item);
+			
 			$item->appendChild(new XMLElement('filename', General::sanitize(basename($data['file']))));
 			
 			$item->setAttributeArray(array(
@@ -428,7 +428,7 @@
 			}
 			
 			$preview_info = Symphony::Database()->fetchRow(0, "SELECT width, height, crop FROM ".Extension_Enhanced_Upload_Field::FIELD_TABLE." WHERE field_id='{$this->_fields['id']}'");
-			var_dump($field_info);
+			var_dump($preview_info);
 			$preview = new XMLElement('preview');
 			$preview->setAttributeArray(array(
 				'width' => $preview_info['width'],
@@ -437,7 +437,10 @@
 			));
 			$item->appendChild($preview);
 			
+			var_dump($preview);
+			
 			$wrapper->appendChild($item);
+			//var_dump($wrapper);
 		}
 		
 		// That's it ! Everything else is handled by the parent!

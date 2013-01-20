@@ -87,10 +87,7 @@
 				array('9', $selected == '9', 'Bottom right')
 			);
 			$label->appendChild(Widget::Select('fields['.$this->get('sortorder').'][crop]', $options));
-			
-			
 			$fieldset->appendChild($label);
-			
 			$wrapper->appendChild($fieldset);
 			
 			//Add Max width and Max height for images
@@ -247,9 +244,8 @@
 			if(preg_match('/image/',$data['mimetype'])){
 				
 				$span = $this->getChildrenWithClass($wrapper, 'frame');
-				//Render an image preview instead of link.
 				
-				//var_dump($wrapper);
+				//Render an image preview instead of link.
 				//Find the A string in array and replace it with an A and IMG file.
 				$imgspan = new XMLElement('span');
 				$a = new XMLElement('a');
@@ -264,10 +260,8 @@
 				$a->appendChild($img);
 				$imgspan->appendChild($a);
 				
-				$span->removeChildAt(0);
-				//Add Fieldset and Legend markup to contain the Preview and Max Height/Width settings!
-				//var_dump($wrapper,$getChild);
-				
+				//Needs a new function in XMLElement called replaceChild. would make Dev work on extensions really nice.
+				$span->removeChildAt(0);		
 				$span->appendChild($imgspan);
 				
 			}
@@ -309,32 +303,6 @@
 				}
 			}
 			
-			/*$label_text = $this->get('label');
-			if ($data['file']) {
-				$label_text .= " (" . $this->get("width") . "x" . $this->get("height") . " preview, <a href=\"" . URL . "/workspace" . $data['file'] . "\" style=\"float:none;\">view original</a>)";
-			}
-			
-			$label = Widget::Label($label_text);
-			$class = 'file';
-			$label->setAttribute('class', $class);
-			if($this->get('required') != 'yes') $label->appendChild(new XMLElement('i', 'Optional'));
-			
-			$span = new XMLElement('span');
-			if ($data['file']) {
-				$img = new XMLElement("img");
-				$img->setAttribute("alt", "");
-				$img->setAttribute("src", URL . '/image/2/' . $this->get("width") . '/' . $this->get("height") . '/' . $this->get("crop") . '' . $data['file']);
-				$span->appendChild($img);
-			}
-			
-			$span->appendChild(Widget::Input('fields'.$fieldnamePrefix.'['.$this->get('element_name').']'.$fieldnamePostfix, $data['file'], ($data['file'] ? 'hidden' : 'file')));
-			
-			$label->appendChild($span);
-			
-			if($flagWithError != NULL) $wrapper->appendChild(Widget::wrapFormElementWithError($label, $flagWithError));
-			else $wrapper->appendChild($label);*/
-			
-			//return self::appendFormattedElement($wrapper,$data);
 		}
 
 		public function commit() {
@@ -455,7 +423,7 @@
 		 * @return Array - data to be inserted into DB
 		 */
 		public function processRawFieldData($data, &$status, &$message=null, $simulate=false, $entry_id=NULL) {
-		
+			if( !is_array($data) || is_null($data) ) return parent::processRawFieldData($data, $status, $message, $simulate, $entry_id);
 			
 			//if (is_array($data) and isset($data['name'])) $data['name'] = self::getHashedFilename($data['name']);
 			// execute logic only once est resuse
@@ -463,7 +431,7 @@
 			// always have an array!
 			$dataIsArray = is_array($data);
 			// get our data
-			
+			//var_dump($data);
 			## Sanitize the filename
 			$data['file']['name'] = Lang::createFilename($data['file']['name']);
 			
@@ -528,35 +496,6 @@
 
 			parent::checkFields($errors, $checkForDuplicates);
 		}
-		
-		//Check the fields for required or not?
-		/*public function checkFields(&$errors, $checkForDuplicates=true){
-			
-			if(!is_array($errors)) $errors = array();
-			
-			if($this->get('label') == '') $errors['label'] = 'This is a required field.';
-			if($this->get('width') == '') $errors['width'] = 'This is a required field.';
-			if($this->get('height') == '') $errors['height'] = 'This is a required field.';
-
-			if($this->get('element_name') == '') $errors['element_name'] = 'This is a required field.';
-			elseif(!preg_match('/^[A-z]([\w\d-_\.]+)?$/i', $this->get('element_name'))){
-				$errors['element_name'] = 'Invalid element name. Must be valid QName.';
-			}
-			
-			elseif($checkForDuplicates){
-				$sql = "SELECT * FROM `tbl_fields` 
-						WHERE `element_name` = '" . $this->get('element_name') . "'
-						".($this->get('id') ? " AND `id` != '".$this->get('id')."' " : '')." 
-						AND `parent_section` = '". $this->get('parent_section') ."' LIMIT 1";
-
-				if($this->Database->fetchRow(0, $sql)){
-					$errors['element_name'] = 'A field with that element name already exists. Please choose another.';
-				}
-			}
-
-			return (is_array($errors) && !empty($errors) ? self::__ERROR__ : self::__OK__);
-			
-		}*/
 		
 		function appendFormattedElement(&$wrapper, $data){
 			

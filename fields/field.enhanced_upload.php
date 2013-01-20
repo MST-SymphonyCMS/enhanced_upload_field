@@ -93,6 +93,8 @@
 			
 			$wrapper->appendChild($fieldset);
 			
+			//Add Max width and Max height for images
+			//Take code from Klaftertiefs Advance-Upload-Field extension: https://github.com/klaftertief/Advanced-Upload-Field
 			$fieldset = new XMLElement('fieldset');
 			$fieldsetTitle = new XMLElement('legend',__('Set maximum Width and Height for Image files'));
 			$fieldset->appendChild($fieldsetTitle);
@@ -115,9 +117,7 @@
 			$fieldset->appendChild($max_dimensions);
 			
 			$wrapper->appendChild($fieldset);
-			
-			//Add Max width and Max height for images
-			//Take code from Klaftertiefs Advance-Upload-Field extension: https://github.com/klaftertief/Advanced-Upload-Field
+		
 		}
 
 		/*-------------------------------------------------------------------------
@@ -464,16 +464,19 @@
 			$dataIsArray = is_array($data);
 			// get our data
 			
-						## Resize image, if it's an image
-			if (getimagesize($data['tmp_name'])) {
+			## Sanitize the filename
+			$data['file']['name'] = Lang::createFilename($data['file']['name']);
+			
+			## Resize image, if it's an image
+			if (getimagesize($data['file']['tmp_name'])) {
 				try {
-					$thumb = PhpThumbFactory::create($data['tmp_name']);
+					$thumb = PhpThumbFactory::create($data['file']['tmp_name']);
 				} catch (Exception $e) {
-					$message = __('There was an error while trying to resize the image <code>%1$s</code>.', array($data['name']));
+					$message = __('There was an error while trying to resize the image <code>%1$s</code>.', array($data['file']['name']));
 					$status = self::__ERROR_CUSTOM__;
 					return;
 				}
-				$thumb->resize($this->get('max_width'), $this->get('max_height'))->save($data['tmp_name']);
+				$thumb->resize($this->get('max_width'), $this->get('max_height'))->save($data['file']['tmp_name']);
 			}
 			
 			

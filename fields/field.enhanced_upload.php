@@ -84,6 +84,9 @@
 			$label->appendChild(Widget::Select('fields['.$this->get('sortorder').'][crop]', $options));
 			
 			$wrapper->appendChild($label);
+			
+			//Add Max width and Max height for images
+			//Take code from Klaftertiefs Advance-Upload-Field extension: https://github.com/klaftertief/Advanced-Upload-Field
 		}
 
 		/*-------------------------------------------------------------------------
@@ -207,7 +210,7 @@
 			//var_dump($wrapper);
 			
 			// Let the upload field do it's job
-			parent::displayPublishPanel(&$wrapper, &$data, $flagWithError, $fieldnamePrefix, $fieldnamePostfix, $entry_id);
+			parent::displayPublishPanel($wrapper, $data, $flagWithError, $fieldnamePrefix, $fieldnamePostfix, $entry_id);
 			
 			//check mime type in order to render preview image
 			if(preg_match('/image/',$data['mimetype'])){
@@ -230,8 +233,8 @@
 				$a->appendChild($img);
 				$imgspan->appendChild($a);
 				
-				$getchild = $span->removeChildAt(0);
-				
+				$span->removeChildAt(0);
+				//Add Fieldset and Legend markup to contain the Preview and Max Height/Width settings!
 				//var_dump($wrapper,$getChild);
 				
 				$span->appendChild($imgspan);

@@ -4,6 +4,7 @@
 
 	// Require the parent class, if not already loaded
 	require_once(TOOLKIT . '/fields/field.upload.php');
+	require_once(EXTENSIONS . '/enhanced_upload_field/lib/phpthumb/ThumbLib.inc.php');
 
 	// Our new class extends the core one
 	Class fieldEnhanced_Upload extends FieldUpload {
@@ -53,6 +54,10 @@
 			$wrapper->appendChild($div);
 			
 			//Image preview/Crop settings
+			$fieldset = new XMLElement('fieldset');
+			$fieldsetTitle = new XMLElement('legend',__('Preview Image in Entry Editor'));
+			$fieldset->appendChild($fieldsetTitle);
+			
 			$group = new XMLElement('div');
 			$group->setAttribute('class', 'group');
 			
@@ -65,8 +70,8 @@
 			$label->appendChild(Widget::Input('fields['.$this->get('sortorder').'][height]', $this->get('height')));
 			if(isset($errors['height'])) $group->appendChild(Widget::wrapFormElementWithError($label, $errors['height']));
 			else $group->appendChild($label);
-						
-			$wrapper->appendChild($group);
+			
+			$fieldset->appendChild($group);
 			
 			$label = Widget::Label('Crop mode');
 			$selected = $this->get('crop');
@@ -83,7 +88,33 @@
 			);
 			$label->appendChild(Widget::Select('fields['.$this->get('sortorder').'][crop]', $options));
 			
-			$wrapper->appendChild($label);
+			
+			$fieldset->appendChild($label);
+			
+			$wrapper->appendChild($fieldset);
+			
+			$fieldset = new XMLElement('fieldset');
+			$fieldsetTitle = new XMLElement('legend',__('Set maximum Width and Height for Image files'));
+			$fieldset->appendChild($fieldsetTitle);
+			
+			$max_dimensions = new XMLElement('div', NULL, array('class' => 'group'));
+			$label = new XMLElement('label', __('Maximum image width <i>Optional</i>'));
+			$label->appendChild(Widget::Input('fields['.$this->get('sortorder').'][max_width]', $this->get('max_width')?$this->get('max_width'):''));
+			if(isset($errors['max_width'])) {
+				$max_dimensions->appendChild(Widget::wrapFormElementWithError($label, $errors['max_width']));
+			} else {
+				$max_dimensions->appendChild($label);
+			};
+			$label = new XMLElement('label', __('Maximum image height <i>Optional</i>'));
+			$label->appendChild(Widget::Input('fields['.$this->get('sortorder').'][max_height]', $this->get('max_height')?$this->get('max_height'):''));
+			if(isset($errors['max_height'])) {
+				$max_dimensions->appendChild(Widget::wrapFormElementWithError($label, $errors['max_height']));
+			} else {
+				$max_dimensions->appendChild($label);
+			};
+			$fieldset->appendChild($max_dimensions);
+			
+			$wrapper->appendChild($fieldset);
 			
 			//Add Max width and Max height for images
 			//Take code from Klaftertiefs Advance-Upload-Field extension: https://github.com/klaftertief/Advanced-Upload-Field
@@ -326,6 +357,8 @@
 			$fields['width'] = $this->get('width');
 			$fields['height'] = $this->get('height');
 			$fields['crop'] = $this->get('crop');
+			$fields['max_width'] = $this->get('max_width');
+			$fields['max_height'] = $this->get('max_height');
 
 			// save
 			return FieldManager::saveSettings($this->get('id'), $fields);
@@ -431,6 +464,19 @@
 			$dataIsArray = is_array($data);
 			// get our data
 			
+						## Resize image, if it's an image
+			if (getimagesize($data['tmp_name'])) {
+				try {
+					$thumb = PhpThumbFactory::create($data['tmp_name']);
+				} catch (Exception $e) {
+					$message = __('There was an error while trying to resize the image <code>%1$s</code>.', array($data['name']));
+					$status = self::__ERROR_CUSTOM__;
+					return;
+				}
+				$thumb->resize($this->get('max_width'), $this->get('max_height'))->save($data['tmp_name']);
+			}
+			
+			
 			if($this->get('hashname') =='yes'){
 				$data['file']['name'] = self::getHashedFilename($data['file']['name']);
 			}
@@ -467,7 +513,19 @@
 
 			return $values;
 		}
+		
+		public function checkFields(&$errors, $checkForDuplicates=true){
+			
+			if(strlen($this->get('max_width')) > 0 && !is_numeric($this->get('max_width'))){
+				$errors['max_width'] = __('Must be a number.');
+			}
+			if(strlen($this->get('max_height')) > 0 && !is_numeric($this->get('max_height'))){
+				$errors['max_height'] = __('Must be a number.');
+			}
 
+			parent::checkFields($errors, $checkForDuplicates);
+		}
+		
 		//Check the fields for required or not?
 		/*public function checkFields(&$errors, $checkForDuplicates=true){
 			

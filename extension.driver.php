@@ -57,6 +57,8 @@
 					`width` varchar(50),
 					`height` varchar(50),
 					`crop` varchar(50),
+					`max_width` int(11) default NULL,
+					`max_height` int(11) default NULL,
 					`unique` enum('yes','no') default 'yes',
 					PRIMARY KEY (`id`),
 					KEY `field_id` (`field_id`)

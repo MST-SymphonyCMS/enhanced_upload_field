@@ -203,16 +203,34 @@
 			// you need to get it fixed because if not, errors
 			// messages from checkPostFieldData will get ovewritten
 			
-			var_dump($data);
+			//var_dump($data);
+			//var_dump($wrapper);
 			
 			// Let the upload field do it's job
-			parent::displayPublishPanel($wrapper, $data, $flagWithError, $fieldnamePrefix, $fieldnamePostfix, $entry_id);
+			parent::displayPublishPanel(&$wrapper, &$data, $flagWithError, $fieldnamePrefix, $fieldnamePostfix, $entry_id);
 			
 			//check mime type in order to render preview image
 			if(preg_match('/image/',$data['mimetype'])){
 				
+				$span = $this->getChildrenWithClass($wrapper, 'frame');
 				//Render an image preview instead of link.
+				
 				var_dump($wrapper);
+				//Find the A string in array and replace it with an A and IMG file.
+				$a = new XMLElement('a');
+				$a->setAttribute('src',URL . '/workspace'. $data['file']);
+				$img = new XMLElement('img');
+				$width = $this->get('width');
+				$height = $this->get('height');
+				$crop = $this->get('crop');
+				$img->setAttribute('src',URL.'/image/2/'.$width.'/'.$height.'/'.$crop.''.$data['file']);
+				$img->setAttribute('title','View Full size image');
+				$img->setAttribute('class','prettyPhoto');
+				$a->appendChild($img);
+
+				//var_dump($wrapper);
+				
+				$span->appendChild($a);
 				
 			}
 			
@@ -346,10 +364,7 @@
 		 * @param $entry_id
 		 */
 		public function checkPostFieldData($data, &$message, $entry_id=NULL) {
-		
-			//var_dump($data);
-			//if (is_array($data) and isset($data['name'])) $data['name'] = self::getHashedFilename($data['name']);
-			
+					
 			// the parent destination
 			$destination = $this->get('destination');
 			// our custom directory
@@ -415,7 +430,6 @@
 			
 			$dir = $dataIsArray ? $data['directory'] : '';
 			
-			//var_dump($data);
 			// check if we have dir
 			$hasDir = self::hasDir($dir);
 			// remove our data from the array

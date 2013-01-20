@@ -217,6 +217,7 @@
 				
 				//var_dump($wrapper);
 				//Find the A string in array and replace it with an A and IMG file.
+				$imgspan = new XMLElement('span');
 				$a = new XMLElement('a');
 				$a->setAttribute('src',URL . '/workspace'. $data['file']);
 				$img = new XMLElement('img');
@@ -227,10 +228,13 @@
 				$img->setAttribute('title','View Full size image');
 				$img->setAttribute('class','prettyPhoto');
 				$a->appendChild($img);
-
-				//var_dump($wrapper);
+				$imgspan->appendChild($a);
 				
-				$span->appendChild($a);
+				$getchild = $span->removeChildAt(0);
+				
+				//var_dump($wrapper,$getChild);
+				
+				$span->appendChild($imgspan);
 				
 			}
 			

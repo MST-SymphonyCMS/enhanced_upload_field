@@ -234,9 +234,6 @@
 			// you need to get it fixed because if not, errors
 			// messages from checkPostFieldData will get ovewritten
 			
-			//var_dump($data);
-			//var_dump($wrapper);
-			
 			// Let the upload field do it's job
 			parent::displayPublishPanel($wrapper, $data, $flagWithError, $fieldnamePrefix, $fieldnamePostfix, $entry_id);
 			
@@ -259,7 +256,6 @@
 				$img->setAttribute('class','prettyPhoto');
 				$a->appendChild($img);
 				$imgspan->appendChild($a);
-				
 				//Needs a new function in XMLElement called replaceChild. would make Dev work on extensions really nice.
 				$span->removeChildAt(0);		
 				$span->appendChild($imgspan);
@@ -312,7 +308,7 @@
 
 			// get the commited data
 			$fields = array();
-			//var_dump($fields);die;
+
 			// set our own
 			$fields['destination'] = rtrim(trim($this->get('destination')), '/');
 			$fields['override'] = $this->get('override');
@@ -327,7 +323,6 @@
 			$fields['crop'] = $this->get('crop');
 			$fields['max_width'] = $this->get('max_width');
 			$fields['max_height'] = $this->get('max_height');
-
 			// save
 			return FieldManager::saveSettings($this->get('id'), $fields);
 		}
@@ -387,7 +382,7 @@
 
 			// revert to what the parent is expecting
 			$data = $this->revertData($data);
-
+			
 			// validate our part
 			if ($this->isDirectoryOverridable() && !self::hasDir($dir)) {
 				$message = __('‘%s’ needs to have a directory setted.', array($this->get('label')));
@@ -400,7 +395,7 @@
 
 				// let the parent do its job
 				$status = parent::checkPostFieldData($data, $message, $entry_id);
-
+				
 				// reset to old value in order to prevent a bug
 				// in the display method
 				$this->set('destination', $destination);
@@ -422,16 +417,14 @@
 		 *
 		 * @return Array - data to be inserted into DB
 		 */
-		public function processRawFieldData($data, &$status, &$message=null, $simulate=false, $entry_id=NULL) {
-			if( !is_array($data) || is_null($data) ) return parent::processRawFieldData($data, $status, $message, $simulate, $entry_id);
-			
-			//if (is_array($data) and isset($data['name'])) $data['name'] = self::getHashedFilename($data['name']);
+		public function processRawFieldData($data, &$status, &$message=null, &$simulate=false, &$entry_id=NULL) {
+			//var_dump($data);
 			// execute logic only once est resuse
 			// although this is pretty clear we will now
 			// always have an array!
 			$dataIsArray = is_array($data);
 			// get our data
-			//var_dump($data);
+			
 			## Sanitize the filename
 			$data['file']['name'] = Lang::createFilename($data['file']['name']);
 			
@@ -446,7 +439,6 @@
 				}
 				$thumb->resize($this->get('max_width'), $this->get('max_height'))->save($data['file']['tmp_name']);
 			}
-			
 			
 			if($this->get('hashname') =='yes'){
 				$data['file']['name'] = self::getHashedFilename($data['file']['name']);
@@ -495,42 +487,6 @@
 			}
 
 			parent::checkFields($errors, $checkForDuplicates);
-		}
-		
-		function appendFormattedElement(&$wrapper, $data){
-			
-			parent::appendFormattedElement($wrapper, $data);
-			
-			$item = new XMLElement($this->get('element_name'));
-			
-			$item->appendChild(new XMLElement('filename', General::sanitize(basename($data['file']))));
-			
-			$item->setAttributeArray(array(
-				'size' => General::formatFilesize(filesize(WORKSPACE . $data['file'])),
-			 	'path' => str_replace(WORKSPACE, NULL, dirname(WORKSPACE . $data['file'])),
-				'type' => $data['mimetype'],
-			));
-						
-			$m = unserialize($data['meta']);
-			
-			if(is_array($m) && !empty($m)){
-				$item->appendChild(new XMLElement('meta', NULL, $m));
-			}
-			
-			$preview_info = Symphony::Database()->fetchRow(0, "SELECT width, height, crop FROM ".Extension_Enhanced_Upload_Field::FIELD_TABLE." WHERE field_id='{$this->_fields['id']}'");
-			//var_dump($preview_info);
-			$preview = new XMLElement('preview');
-			$preview->setAttributeArray(array(
-				'width' => $preview_info['width'],
-				'height' => $preview_info['height'],
-				'crop' => $preview_info['crop']
-			));
-			$item->appendChild($preview);
-			
-			//var_dump($preview);
-			
-			$wrapper->appendChild($item);
-			//var_dump($wrapper);
 		}
 		
 		// That's it ! Everything else is handled by the parent!

@@ -220,9 +220,9 @@
 				$a = new XMLElement('a');
 				$a->setAttribute('src',URL . '/workspace'. $data['file']);
 				$img = new XMLElement('img');
-				$width = $this->get('width');
-				$height = $this->get('height');
-				$crop = $this->get('crop');
+				$width = $this->get('width') ? $this->get('width') : '100';
+				$height = $this->get('height') ? $this->get('height') : '100'; 
+				$crop = $this->get('crop') ? $this->get('crop') : '5';
 				$img->setAttribute('src',URL.'/image/2/'.$width.'/'.$height.'/'.$crop.''.$data['file']);
 				$img->setAttribute('title','View Full size image');
 				$img->setAttribute('class','prettyPhoto');

@@ -215,7 +215,7 @@
 				$span = $this->getChildrenWithClass($wrapper, 'frame');
 				//Render an image preview instead of link.
 				
-				var_dump($wrapper);
+				//var_dump($wrapper);
 				//Find the A string in array and replace it with an A and IMG file.
 				$a = new XMLElement('a');
 				$a->setAttribute('src',URL . '/workspace'. $data['file']);
